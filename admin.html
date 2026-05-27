@@ -697,8 +697,8 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 
     if (!chatBtn || !chatInput) return;
 
-    // Proxy endpoint to Vercel Serverless Function to keep API keys secure
-    const AI_PROXY_ENDPOINT = "/api/ai-chat";
+    const COHERE_API_KEY = "g0YK7d1DPFWbPhVNdg3ghVvnQpBA86OnnH1UNO54";
+    const OPENROUTER_API_KEY = "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";
 
     // ── AI FORM FILLING ENGINE ─────────────────────────────────
     function aiFillPATForm(analysis) {
@@ -993,23 +993,28 @@ BEHAVIOR:
 
         async function tryCohere() {
             const msgs = [{ role: "system", content: systemPrompt }, ...chatHistory.slice(-8)];
-            const res = await fetch(AI_PROXY_ENDPOINT, {
+            const res = await fetch("https://api.cohere.com/v2/chat", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ provider: "cohere", messages: msgs })
+                headers: { "Authorization": `Bearer ${COHERE_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ model: "command-r-plus-08-2024", messages: msgs, temperature: 0.5, max_tokens: 1200 })
             });
-            if (!res.ok) throw new Error("AI Service (Cohere) is currently unavailable.");
+            if (!res.ok) throw new Error("Cohere busy");
             return res.json();
         }
 
         async function tryOpenRouter() {
             const msgs = [{ role: "system", content: systemPrompt }, ...chatHistory.slice(-8)];
-            const res = await fetch(AI_PROXY_ENDPOINT, {
+            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ provider: "openrouter", messages: msgs })
+                headers: {
+                    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": window.location.href,
+                    "X-Title": "FiberOne Admin"
+                },
+                body: JSON.stringify({ model: "google/gemini-2.0-flash-exp:free", messages: msgs, temperature: 0.5, max_tokens: 1200 })
             });
-            if (!res.ok) throw new Error("AI Service (OpenRouter) is currently unavailable.");
+            if (!res.ok) throw new Error("OpenRouter failed");
             const data = await res.json();
             return { message: { content: [{text: data.choices?.[0]?.message?.content || "I'm sorry, I couldn't generate a response."}] } };
         }
