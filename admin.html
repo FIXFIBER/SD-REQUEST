@@ -697,8 +697,8 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 
     if (!chatBtn || !chatInput) return;
 
-    const COHERE_API_KEY = "g0YK7d1DPFWbPhVNdg3ghVvnQpBA86OnnH1UNO54";
-    const OPENROUTER_API_KEY = "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";
+    // Proxy endpoint to Vercel Serverless Function to keep API keys secure
+    const AI_PROXY_ENDPOINT = "/api/ai-chat";
 
     // ── AI FORM FILLING ENGINE ─────────────────────────────────
     function aiFillPATForm(analysis) {
@@ -890,6 +890,11 @@ Directory:
 ${globalUsersData.length > 0 ? globalUsersData.map(u => `- ${u.name} (${u.email}) | Role: ${u.role} | Dept: ${u.department} | Gender: ${u.gender} | ID: ${u.userId} | Status: ${u.status} | Last Login: ${u.lastLoginAt || 'Never'} | Notes: ${u.workflowNotes || 'None'}`).join('\n') : "No users found."}`;
         const deptCtx = `Active Depts: ${globalDeptsData.map(d => d.name).join(', ')}.`;
 
+        // PAT System Summary for AI context
+        const patSummary = allPATProjects.length > 0 
+            ? `System PAT Records (${allPATProjects.length} total):\n` + allPATProjects.slice(0, 10).map(p => `- [${p.projectId}] ${p.projectName}: Status: ${p.status}, Score: ${p.snagScore}, Verdict: ${p.verdict}, Vendor: ${p.vendor}`).join('\n')
+            : "No PAT projects found in the system records.";
+
         // PAT context for AI
         const patCtx = `PAT SYSTEM: You can help fill PAT (Project Acceptance Test) forms. The form has:
 - Site Info: projectName, siteAddress, lat, lon, phase, vendor, inspectionDate, workDescription
@@ -903,7 +908,7 @@ ${globalUsersData.length > 0 ? globalUsersData.map(u => `- ${u.name} (${u.email}
 When user describes a project, extract all details and return them in a structured JSON format.
 If user says "fill PAT form" or describes a project, return JSON with extracted data.`;
 
-        const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband — an advanced administrative AI assistant with full system control capabilities.
+        const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband — the central nervous system for internal infrastructure and administrative control.
 
 USER: ${sessionStorage.getItem('sd_name')} (${sessionStorage.getItem('sd_role')}) | Dept: ${sessionStorage.getItem('sd_department')}.
 
@@ -922,6 +927,7 @@ COMMANDS:
 - CREATE_DEPT: {"name"}
 - RESET_PASSWORD: {"email","password"}
 - FILL_PAT_FORM: {"projectName","siteAddress","lat","lon","phase","vendor","inspectionDate","workDescription","checklist":{},"boq":[],"snags":[],"signoff":{},"verdict"}
+- REFRESH_SYSTEM_DATA: {} - Re-synchronizes all UI components with the Core System records.
 
 PAT FORM FILLING:
 When user describes a project or says "fill PAT form", analyze the description and extract:
@@ -934,9 +940,12 @@ When user describes a project or says "fill PAT form", analyze the description a
 
 Return extracted data as JSON-CMD with type "FILL_PAT_FORM".
 
+TERMINOLOGY: Refer to the backend as "The System", "Core Infrastructure", or "System Records". NEVER use terms like "spreadsheet" or "sheet".
+
 CONTEXT:
 Users: ${userCtx}
 Depts: ${deptCtx}
+PAT Records: ${patSummary}
 ${patCtx}
 
 BEHAVIOR:
@@ -973,6 +982,10 @@ BEHAVIOR:
                     }
                     const success = aiFillPATForm(cmd.params);
                     return { success: success, message: success ? 'PAT form auto-filled. Review and click Save.' : 'Form fill partially failed.' };
+                case 'REFRESH_SYSTEM_DATA':
+                    loadAllData();
+                    loadPATProjects();
+                    return { success: true, message: 'System data re-synchronized. All UI modules updated.' };
                 default:
                     return { success: false, message: `Unknown command: ${cmd.type}` };
             }
@@ -980,28 +993,23 @@ BEHAVIOR:
 
         async function tryCohere() {
             const msgs = [{ role: "system", content: systemPrompt }, ...chatHistory.slice(-8)];
-            const res = await fetch("https://api.cohere.com/v2/chat", {
+            const res = await fetch(AI_PROXY_ENDPOINT, {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${COHERE_API_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: "command-r-plus-08-2024", messages: msgs, temperature: 0.5, max_tokens: 1200 })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ provider: "cohere", messages: msgs })
             });
-            if (!res.ok) throw new Error("Cohere busy");
+            if (!res.ok) throw new Error("AI Service (Cohere) is currently unavailable.");
             return res.json();
         }
 
         async function tryOpenRouter() {
             const msgs = [{ role: "system", content: systemPrompt }, ...chatHistory.slice(-8)];
-            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            const res = await fetch(AI_PROXY_ENDPOINT, {
                 method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": window.location.href,
-                    "X-Title": "FiberOne Admin"
-                },
-                body: JSON.stringify({ model: "google/gemini-2.0-flash-exp:free", messages: msgs, temperature: 0.5, max_tokens: 1200 })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ provider: "openrouter", messages: msgs })
             });
-            if (!res.ok) throw new Error("OpenRouter failed");
+            if (!res.ok) throw new Error("AI Service (OpenRouter) is currently unavailable.");
             const data = await res.json();
             return { message: { content: [{text: data.choices?.[0]?.message?.content || "I'm sorry, I couldn't generate a response."}] } };
         }
