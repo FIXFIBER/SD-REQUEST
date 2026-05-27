@@ -6,6 +6,7 @@
     <title>Admin Overview | FiberOne</title>
     <link rel="icon" type="image/png" href="logo/img2.png">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     
@@ -141,6 +142,12 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
     .data-table td { display: flex; justify-content: space-between; border-bottom: none; padding: 6px 4px; }
     .data-table td::before { content: attr(data-label); font-weight: 600; font-size: 11px; color: #8a90a0; }
 }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .chat-container, .nav, .tab-bar, .page-header, .stats-grid, .section-card { display: none !important; }
+}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;600;700&display=swap" rel="stylesheet">
@@ -189,13 +196,23 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 
     <!-- SD-AI Tab Content -->
     <div id="sd-ai" class="tab-content active">
-        <div class="chat-container">
-            <div class="chat-messages" id="admin-chat-messages">
-                <div class="msg bot">Connecting to SD-AI...</div>
+        <div style="display:flex; gap:20px; align-items: flex-start; height: 100%;" id="ai-workspace">
+            <div class="chat-container" style="flex: 1; min-width: 380px;">
+                <div class="chat-messages" id="admin-chat-messages">
+                    <div class="msg bot">Connecting to SD-AI...</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" placeholder="Ask AI about request trends or system health...">
+                    <button class="btn-send">Send</button>
+                </div>
             </div>
-            <div class="chat-input-area">
-                <input type="text" class="chat-input" placeholder="Ask AI about request trends or system health...">
-                <button class="btn-send">Send</button>
+            <!-- Side Panel for PAT Form (Beside AI) -->
+            <div id="ai-side-panel" style="display:none; flex: 2.2; background: #fff; border: 0.5px solid #e2e4e9; border-radius: 12px; flex-direction: column; overflow: hidden; height: 80vh; position: sticky; top: 0;">
+                <div style="background:#0d1526; color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700; font-size:14px;">AI PAT Workspace</span>
+                    <button onclick="closeAISidePanel()" style="background:rgba(255,255,255,.1); border:none; color:#fff; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size: 16px;">✕</button>
+                </div>
+                <div id="ai-side-panel-content" style="padding:0; overflow-y:auto; flex:1;"></div>
             </div>
         </div>
     </div>
@@ -689,21 +706,151 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 // ══════════════════════════════════════════════════════════════
 // SD-AI CHAT v3.0 — ADVANCED FORM FILLING & SYSTEM CONTROL
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// SD-AI CHAT v4.0 — COHERE COMMAND A VISION + DOCUMENT INTELLIGENCE
+// Supports: Images, PDFs, Screenshots, Scanned Documents
+// ══════════════════════════════════════════════════════════════
 (function initAdminAIChat() {
     const chatInput = document.querySelector('#sd-ai .chat-input');
     const chatBtn = document.querySelector('#sd-ai .btn-send');
     const chatMessages = document.querySelector('#admin-chat-messages');
+    const chatContainer = document.querySelector('#sd-ai .chat-container');
     let chatHistory = [];
+    let pendingFiles = []; // Files waiting to be sent with next message
 
     if (!chatBtn || !chatInput) return;
 
     const COHERE_API_KEY = "g0YK7d1DPFWbPhVNdg3ghVvnQpBA86OnnH1UNO54";
     const OPENROUTER_API_KEY = "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";
 
+    // ── ADD FILE UPLOAD UI ────────────────────────────────────
+    const uploadZone = document.createElement('div');
+    uploadZone.id = 'ai-upload-zone';
+    uploadZone.innerHTML = `
+        <div style="padding:8px 16px;background:#f8fafc;border-top:0.5px solid #e2e4e9;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input type="file" id="ai-file-input" multiple accept="image/*,.pdf,.png,.jpg,.jpeg,.webp,.gif" style="display:none">
+            <button onclick="document.getElementById('ai-file-input').click()" style="background:#f0f4ff;color:#1a3faa;border:1px solid #b3c0f0;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px">
+                <i class="ti ti-photo-plus" style="font-size:15px"></i> Add Image / PDF
+            </button>
+            <span id="ai-file-count" style="font-size:11px;color:#8a90a0">No files selected</span>
+            <span style="margin-left:auto;font-size:10px;color:#8a90a0;background:#e8ecf5;padding:3px 8px;border-radius:4px">🧠 Cohere Vision Ready</span>
+        </div>
+        <div id="ai-file-preview" style="display:flex;gap:8px;padding:8px 16px;background:#f8fafc;flex-wrap:wrap"></div>
+    `;
+    chatContainer.insertBefore(uploadZone, chatContainer.querySelector('.chat-input-area'));
+
+    const fileInput = document.getElementById('ai-file-input');
+    const fileCount = document.getElementById('ai-file-count');
+    const filePreview = document.getElementById('ai-file-preview');
+
+    fileInput.addEventListener('change', handleFileSelect);
+
+    // Handle Pasted Images (Advanced "Paste PDF Screenshot" support)
+    chatInput.addEventListener('paste', (e) => {
+        const items = e.clipboardData.items;
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const blob = item.getAsFile();
+                pendingFiles.push(blob);
+                renderFilePreview();
+            }
+        }
+    });
+
+    function handleFileSelect(e) {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            if (pendingFiles.length >= 5) {
+                alert('Maximum 5 files per message. Remove some first.');
+                return;
+            }
+            pendingFiles.push(file);
+            renderFilePreview();
+        });
+        fileInput.value = '';
+    }
+
+    function renderFilePreview() {
+        fileCount.textContent = pendingFiles.length + ' file(s) ready';
+        filePreview.innerHTML = pendingFiles.map((file, i) => `
+            <div style="position:relative;display:inline-block">
+                ${file.type.startsWith('image/') 
+                    ? `<img src="${URL.createObjectURL(file)}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #e2e4e9">`
+                    : `<div style="width:60px;height:60px;background:#f0f4ff;border-radius:8px;border:1px solid #e2e4e9;display:flex;align-items:center;justify-content:center;font-size:24px">📄</div>`
+                }
+                <button onclick="window.removeAIFile(${i})" style="position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border:none;width:18px;height:18px;border-radius:50%;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+                <div style="font-size:9px;color:#8a90a0;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${file.name}</div>
+            </div>
+        `).join('');
+    }
+
+    window.removeAIFile = function(index) {
+        pendingFiles.splice(index, 1);
+        renderFilePreview();
+    };
+
+    // ── PDF TO IMAGE CONVERTER ────────────────────────────────
+    async function pdfToImages(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const typedArray = new Uint8Array(e.target.result);
+                try {
+                    // Use PDF.js from CDN (loaded dynamically)
+                    if (typeof pdfjsLib === 'undefined') {
+                        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    }
+                    const pdf = await pdfjsLib.getDocument({data: typedArray}).promise;
+                    const images = [];
+                    const maxPages = Math.min(pdf.numPages, 3); // Max 3 pages for API limits
+
+                    for (let i = 1; i <= maxPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const scale = 1.5;
+                        const viewport = page.getViewport({scale});
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        await page.render({canvasContext: ctx, viewport}).promise;
+                        images.push(canvas.toDataURL('image/jpeg', 0.8));
+                    }
+                    resolve(images);
+                } catch(err) {
+                    reject(err);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+
+    // ── IMAGE TO BASE64 ───────────────────────────────────────
+    async function fileToBase64(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result.split(',')[1];
+                resolve(base64);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     // ── AI FORM FILLING ENGINE ─────────────────────────────────
     function aiFillPATForm(analysis) {
         try {
-            // Fill basic fields
             if(analysis.projectName) document.getElementById('pm-name').value = analysis.projectName;
             if(analysis.siteAddress) document.getElementById('pm-address').value = analysis.siteAddress;
             if(analysis.lat) document.getElementById('pm-lat').value = analysis.lat;
@@ -713,7 +860,6 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             if(analysis.workDescription) document.getElementById('pm-desc').value = analysis.workDescription;
             if(analysis.inspectionDate) document.getElementById('pm-date').value = analysis.inspectionDate;
 
-            // Fill checklist radio buttons
             if(analysis.checklist) {
                 Object.entries(analysis.checklist).forEach(([key, val]) => {
                     const radio = document.querySelector(`input[name="${key}"][value="${val}"]`);
@@ -721,7 +867,6 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
                 });
             }
 
-            // Fill BOQ
             if(analysis.boq && Array.isArray(analysis.boq)) {
                 const descs = document.querySelectorAll('.pm-boq-desc');
                 const scopes = document.querySelectorAll('.pm-boq-scope');
@@ -739,7 +884,6 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
                 });
             }
 
-            // Fill snag list
             if(analysis.snags && Array.isArray(analysis.snags)) {
                 const snagDescs = document.querySelectorAll('.pm-snag-desc');
                 const snagWts = document.querySelectorAll('.pm-snag-wt');
@@ -751,7 +895,6 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
                 });
             }
 
-            // Fill signoff
             if(analysis.signoff) {
                 Object.entries(analysis.signoff).forEach(([team, name]) => {
                     const input = document.querySelector(`.pm-sig-name[data-team="${team}"]`);
@@ -759,7 +902,6 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
                 });
             }
 
-            // Set verdict
             if(analysis.verdict) {
                 const verdictOpts = document.querySelectorAll('.pm-verdict-opt');
                 verdictOpts.forEach(opt => {
@@ -783,56 +925,77 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
     // ── SMART COMMAND PARSER ──────────────────────────────────
     function parseAICommands(text) {
         const commands = [];
-
-        // Pattern: "fill PAT form with..." or "create PAT for..."
         const patFillMatch = text.match(/fill\s+PAT\s+form|create\s+PAT|new\s+PAT|fill\s+form|auto\s+fill/i);
-        if(patFillMatch) {
-            commands.push({type: 'FILL_PAT_FORM', raw: text});
-        }
-
-        // Pattern: "save PAT" or "submit form"
+        if(patFillMatch) commands.push({type: 'FILL_PAT_FORM', raw: text});
         const saveMatch = text.match(/save\s+PAT|submit\s+form|save\s+project/i);
-        if(saveMatch) {
-            commands.push({type: 'SAVE_PAT'});
-        }
-
-        // Pattern: "open PAT form"
+        if(saveMatch) commands.push({type: 'SAVE_PAT'});
         const openMatch = text.match(/open\s+PAT|show\s+PAT\s+form|create\s+new\s+PAT/i);
-        if(openMatch && !patFillMatch) {
-            commands.push({type: 'OPEN_PAT'});
-        }
-
-        // Pattern: "set project name to X" or "project name is X"
-        const fieldMatches = text.matchAll(/(?:set\s+)?(project\s+name|address|phase|vendor|lat|lon|description)\s+(?:to\s+|is\s+)?["']?([^"\n]+)["']?/gi);
-        for(const match of fieldMatches) {
-            commands.push({type: 'SET_FIELD', field: match[1].trim(), value: match[2].trim()});
-        }
-
+        if(openMatch && !patFillMatch) commands.push({type: 'OPEN_PAT'});
+        
+        // Command for granular checklist updates
+        const checkMatch = text.match(/(set|mark|change)\s+(section|item|all)\s+.*(ok|nok|na)/i);
+        if (checkMatch) commands.push({type: 'UPDATE_PAT_CHECKLIST', raw: text});
         return commands;
     }
 
+    // ── MAIN SEND MESSAGE ─────────────────────────────────────
     async function sendMessage() {
         const message = chatInput.value.trim();
-        if (!message) return;
+        if (!message && pendingFiles.length === 0) return;
 
         chatBtn.disabled = true;
         chatInput.disabled = true;
         const originalBtnText = chatBtn.innerText;
         chatBtn.innerText = '...';
 
-        chatHistory.push({ role: "user", content: message });
+        // Process files first
+        let imageAttachments = [];
+        if (pendingFiles.length > 0) {
+            const processingMsg = document.createElement('div');
+            processingMsg.className = 'msg bot';
+            processingMsg.innerText = `📄 Processing ${pendingFiles.length} document(s)...`;
+            chatMessages.appendChild(processingMsg);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
 
+            for (const file of pendingFiles) {
+                try {
+                    if (file.type === 'application/pdf') {
+                        const images = await pdfToImages(file);
+                        for (const imgBase64 of images) {
+                            imageAttachments.push({type: 'image_url', image_url: {url: imgBase64}});
+                        }
+                    } else if (file.type.startsWith('image/')) {
+                        const base64 = await fileToBase64(file);
+                        imageAttachments.push({type: 'image_url', image_url: {url: `data:${file.type};base64,${base64}`}});
+                    }
+                } catch(err) {
+                    console.error('File processing error:', err);
+                }
+            }
+            processingMsg.remove();
+        }
+
+        // Add user message to history
+        const userContent = [];
+        if (message) userContent.push({type: 'text', text: message});
+        if (imageAttachments.length > 0) userContent.push(...imageAttachments);
+
+        chatHistory.push({ role: "user", content: message || "[Document uploaded for analysis]" });
+
+        // Show user message in UI
         const userMsg = document.createElement('div');
         userMsg.className = 'msg user';
-        userMsg.innerText = message;
+        userMsg.innerHTML = (message || '') + (pendingFiles.length > 0 ? `<br><span style="font-size:11px;opacity:0.8">📎 ${pendingFiles.length} file(s)</span>` : '');
         chatMessages.appendChild(userMsg);
         chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
 
         chatInput.value = '';
+        pendingFiles = [];
+        renderFilePreview();
 
         const thinkingMsg = document.createElement('div');
         thinkingMsg.className = 'msg bot';
-        thinkingMsg.innerText = 'SD-AI is analyzing...';
+        thinkingMsg.innerText = imageAttachments.length > 0 ? '🔍 SD-AI is analyzing your documents with vision...' : 'SD-AI is analyzing...';
         chatMessages.appendChild(thinkingMsg);
         chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
 
@@ -848,40 +1011,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
         };
 
-        // Pre-parse user intent for quick actions
-        const quickCommands = parseAICommands(message);
-        let quickActionTaken = false;
-
-        for(const cmd of quickCommands) {
-            if(cmd.type === 'OPEN_PAT') {
-                thinkingMsg.remove();
-                openPATForm();
-                addSystemNote('PAT form opened. You can now describe the project and I will fill it in.');
-                quickActionTaken = true;
-                break;
-            }
-            if(cmd.type === 'SAVE_PAT') {
-                thinkingMsg.remove();
-                if(!_checkPATEditPermission()) {
-                    addSystemNote('Only MEC department can save PAT projects.', true);
-                } else {
-                    savePATForm();
-                    addSystemNote('Saving PAT project...');
-                }
-                quickActionTaken = true;
-                break;
-            }
-        }
-
-        if(quickActionTaken) {
-            chatBtn.disabled = false;
-            chatInput.disabled = false;
-            chatBtn.innerText = originalBtnText;
-            chatInput.focus();
-            return;
-        }
-
-        // Snapshot for context
+        // Build context
         const superAdminsCount = globalUsersData.filter(u => u.role === 'super admin').length;
         const adminsCount = globalUsersData.filter(u => u.role === 'admin').length;
         const mecCount = globalUsersData.filter(u => String(u.department).toLowerCase() === 'mec').length;
@@ -889,28 +1019,15 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 Directory:
 ${globalUsersData.length > 0 ? globalUsersData.map(u => `- ${u.name} (${u.email}) | Role: ${u.role} | Dept: ${u.department} | Gender: ${u.gender} | ID: ${u.userId} | Status: ${u.status} | Last Login: ${u.lastLoginAt || 'Never'} | Notes: ${u.workflowNotes || 'None'}`).join('\n') : "No users found."}`;
         const deptCtx = `Active Depts: ${globalDeptsData.map(d => d.name).join(', ')}.`;
-
-        // PAT System Summary for AI context
         const patSummary = allPATProjects.length > 0 
             ? `System PAT Records (${allPATProjects.length} total):\n` + allPATProjects.slice(0, 10).map(p => `- [${p.projectId}] ${p.projectName}: Status: ${p.status}, Score: ${p.snagScore}, Verdict: ${p.verdict}, Vendor: ${p.vendor}`).join('\n')
             : "No PAT projects found in the system records.";
 
-        // PAT context for AI
-        const patCtx = `PAT SYSTEM: You can help fill PAT (Project Acceptance Test) forms. The form has:
-- Site Info: projectName, siteAddress, lat, lon, phase, vendor, inspectionDate, workDescription
-- Checklist: 70+ items with severity CR(critical=3pts), MJ(major=2pts), MN(minor=1pt). Values: ok, nok, na
-- BOQ: 10 rows of material reconciliation (desc, scope, installed, variance, remark)
-- Snag List: up to 7 snags (desc, weight 0-3)
-- Signoff: Vendor, Project Team, Planning Team, SD Team, MEC Team
-- Verdict: Fully Accepted, Partially Accepted, Rejected
-- AUTO-FAIL: Any CR=NOK or total score >= 3 = REJECTED
-
-When user describes a project, extract all details and return them in a structured JSON format.
-If user says "fill PAT form" or describes a project, return JSON with extracted data.`;
-
         const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband — the central nervous system for internal infrastructure and administrative control.
-
+        
 USER: ${sessionStorage.getItem('sd_name')} (${sessionStorage.getItem('sd_role')}) | Dept: ${sessionStorage.getItem('sd_department')}.
+
+VISION CAPABILITY: You can SEE and READ images, documents, screenshots, scanned forms, and PDFs uploaded by the user. Analyze them carefully and extract all relevant information.
 
 COMMAND PROTOCOL:
 1. When you need to act on the system, output a JSON block with language tag "json-cmd".
@@ -919,24 +1036,47 @@ COMMAND PROTOCOL:
 4. Wait for "SYSTEM_FEEDBACK" before providing final human confirmation.
 5. Use exact emails from the directory.
 
-COMMANDS:
+WORKSPACE MANIPULATION (IMPORTANT):
+You control the UI panel beside the chat. If the user wants to "make a new PAT", "open the form", or "start a project", ALWAYS trigger OPEN_PAT. 
+If the user mentions a specific Project ID (e.g., PAT-VTEBVX) to "edit", "open", or "continue", you MUST use LOAD_PAT_PROJECT immediately.
+If the user gives specific instructions like "mark section 1 as ok" or "set items 5 to 10 as NOK", use the FILL_PAT_FORM command to update the checklist.
+Crucially, if the user provides ANY PAT form details (e.g., "project name X", "site address Y", "vendor Z"), IMMEDIATELY generate a FILL_PAT_FORM command with those specific details. DO NOT ask for more information if the user is actively providing it.
+
+PAT CHECKLIST MAPPING:
+- Section 1 (Civil): pmchk0 to pmchk23. The UI displays these as Item #0 to #23.
+- Section 2 (Cabinet/Fiber): pmchk24 to pmchk69. The UI displays these as Item #24 to #69.
+Use the FILL_PAT_FORM command to update checklist items. You can update multiple items at once in the "checklist" object (e.g. {"pmchk0":"na", "pmchk1":"na"}).
+
+COMMAND LIST:
+- OPEN_PAT: {} - Opens the PAT side-panel workspace.
+- LOAD_PAT_PROJECT: {"projectId": "PAT-XXXXX"} - Fetches data for an existing project and loads it into the side-panel workspace.
+- EXPORT_PAT_PDF: {"projectId": "PAT-XXXXXX"} - Opens the exact PDF-format view for printing or saving.
+- SAVE_PAT: {} - Triggers the save function for the current PAT.
+- FILL_PAT_FORM: {"projectName","siteAddress","lat","lon","phase","vendor","inspectionDate","workDescription","checklist":{},"boq":[],"snags":[],"signoff":{},"verdict"}
 - CREATE_USER: {"name","email","password","dept","role","gender"}
 - UPDATE_USER_ROLE: {"userId","role"}
 - UPDATE_USER: {"userId", "updates": {"name", "email", "dept", "gender"}}
 - DELETE_USER: {"userId"}
 - CREATE_DEPT: {"name"}
-- RESET_PASSWORD: {"email","password"}
-- FILL_PAT_FORM: {"projectName","siteAddress","lat","lon","phase","vendor","inspectionDate","workDescription","checklist":{},"boq":[],"snags":[],"signoff":{},"verdict"}
-- REFRESH_SYSTEM_DATA: {} - Re-synchronizes all UI components with the Core System records.
+- REFRESH_SYSTEM_DATA: {}
+
+DOCUMENT INTELLIGENCE:
+When user uploads images/documents:
+1. READ all text visible in the image/document using your vision capability
+2. If it's a PAT form, inspection report, or project document, extract ALL fields
+3. Look for: project names, addresses, vendor names, dates, checklist items, scores, signatures
+4. If tables are present, extract all row data
+5. Return structured data that can be used to fill the PAT form
 
 PAT FORM FILLING:
-When user describes a project or says "fill PAT form", analyze the description and extract:
+When user describes a project or uploads a PAT document, analyze and extract:
 1. All site information fields
-2. For checklist: if user mentions specific items, set them. Otherwise default all to "ok" unless issues mentioned
-3. For BOQ: extract material quantities if mentioned
+2. For checklist: if document shows specific items, set them. Otherwise default all to "ok" unless issues mentioned
+3. For BOQ: extract material quantities if present in document
+When the user provides a project name, site address, vendor, or any other specific field value, immediately generate a FILL_PAT_FORM command with *only* that field updated. Do not wait for a complete set of information before acting on individual field updates.
 4. For snags: extract any mentioned issues with weights
 5. For signoff: extract team names if mentioned
-6. Calculate verdict based on snag rules
+6. Calculate verdict based on snag rules (Any CR=NOK or score >= 3 = REJECTED)
 
 Return extracted data as JSON-CMD with type "FILL_PAT_FORM".
 
@@ -946,7 +1086,6 @@ CONTEXT:
 Users: ${userCtx}
 Depts: ${deptCtx}
 PAT Records: ${patSummary}
-${patCtx}
 
 BEHAVIOR:
 - Be concise but thorough
@@ -954,6 +1093,7 @@ BEHAVIOR:
 - For user management, verify before acting
 - For PAT forms, intelligently parse descriptions and fill all relevant fields
 - If user asks to "create PAT for [project]", open the form and fill it automatically
+- When analyzing documents, describe what you see before extracting data
 - Always confirm actions with specific details (names, IDs, scores)`;
 
         async function executeCommand(cmd) {
@@ -974,14 +1114,29 @@ BEHAVIOR:
                     return await gasCallAsync('addDepartment', [cmd.params.name, '']);
                 case 'RESET_PASSWORD':
                     return await gasCallAsync('resetUserPassword', [cmd.params.email, cmd.params.password]);
-                case 'FILL_PAT_FORM':
-                    // Open form if not open
-                    const modal = document.getElementById('pat-modal');
-                    if(modal.style.display !== 'block') {
-                        openPATForm();
+                case 'SAVE_PAT':
+                    if(!_checkPATEditPermission()) return { success: false, message: 'Permission Denied.' };
+                    savePATForm();
+                    return { success: true, message: 'Save signal sent to workspace.' };
+                case 'OPEN_PAT':
+                    openPATForm(true);
+                    return { success: true, message: 'PAT Workspace opened beside chat.' };
+                case 'EXPORT_PAT_PDF':
+                    viewPATProject(cmd.params.projectId);
+                    return { success: true, message: 'PDF export window opened for project ' + cmd.params.projectId };
+                case 'LOAD_PAT_PROJECT':
+                    const res = await gasCallAsync('getPATProjectById', [cmd.params.projectId]);
+                    if(res.success) {
+                        openPATForm(true); 
+                        aiFillPATForm(res.project);
+                        return { success: true, message: `Project ${cmd.params.projectId} successfully loaded into workspace.` };
                     }
+                    return { success: false, message: res.message || 'Project not found.' };
+                case 'FILL_PAT_FORM':
+                    const sidePanel = document.getElementById('ai-side-panel');
+                    if(sidePanel.style.display !== 'flex') openPATForm(true);
                     const success = aiFillPATForm(cmd.params);
-                    return { success: success, message: success ? 'PAT form auto-filled. Review and click Save.' : 'Form fill partially failed.' };
+                    return { success: success, message: success ? 'PAT Workspace updated. Check the side panel.' : 'Form fill partially failed.' };
                 case 'REFRESH_SYSTEM_DATA':
                     loadAllData();
                     loadPATProjects();
@@ -991,19 +1146,83 @@ BEHAVIOR:
             }
         }
 
-        async function tryCohere() {
-            const msgs = [{ role: "system", content: systemPrompt }, ...chatHistory.slice(-8)];
+        // ── COHERE VISION API ────────────────────────────────────
+        async function tryCohereVision() {
+            const msgs = [{ role: "system", content: systemPrompt }];
+
+            // Add recent history (text only for history, current message has images)
+            chatHistory.slice(-6).forEach(h => {
+                if (h.role === 'user' && typeof h.content === 'string') {
+                    msgs.push({ role: "user", content: h.content });
+                } else if (h.role === 'assistant' && typeof h.content === 'string') {
+                    msgs.push({ role: "assistant", content: h.content });
+                }
+            });
+
+            // Current message with images
+            const currentContent = [];
+            if (message) currentContent.push({type: "text", text: message});
+            if (imageAttachments.length > 0) {
+                imageAttachments.forEach(img => currentContent.push(img));
+            }
+
+            if (currentContent.length > 0) {
+                msgs.push({ role: "user", content: currentContent });
+            }
+
             const res = await fetch("https://api.cohere.com/v2/chat", {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${COHERE_API_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: "command-r-plus-08-2024", messages: msgs, temperature: 0.5, max_tokens: 1200 })
+                headers: { 
+                    "Authorization": `Bearer ${COHERE_API_KEY}`, 
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify({ 
+                    model: "command-a-vision-07-2025", 
+                    messages: msgs, 
+                    temperature: 0.4, 
+                    max_tokens: 2000 
+                })
             });
-            if (!res.ok) throw new Error("Cohere busy");
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error("Cohere Vision API error: " + errText);
+            }
+            return res.json();
+        }
+
+        async function tryCohereText() {
+            const msgs = [{ role: "system", content: systemPrompt }];
+            chatHistory.slice(-8).forEach(h => {
+                if (typeof h.content === 'string') {
+                    msgs.push({ role: h.role, content: h.content });
+                }
+            });
+
+            const res = await fetch("https://api.cohere.com/v2/chat", {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${COHERE_API_KEY}`, 
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify({ 
+                    model: "command-r-plus-08-2024", 
+                    messages: msgs, 
+                    temperature: 0.5, 
+                    max_tokens: 1200 
+                })
+            });
+            if (!res.ok) throw new Error("Cohere text API busy");
             return res.json();
         }
 
         async function tryOpenRouter() {
-            const msgs = [{ role: "system", content: systemPrompt }, ...chatHistory.slice(-8)];
+            const msgs = [{ role: "system", content: systemPrompt }];
+            chatHistory.slice(-8).forEach(h => {
+                if (typeof h.content === 'string') {
+                    msgs.push({ role: h.role, content: h.content });
+                }
+            });
+
             const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -1012,7 +1231,12 @@ BEHAVIOR:
                     "HTTP-Referer": window.location.href,
                     "X-Title": "FiberOne Admin"
                 },
-                body: JSON.stringify({ model: "google/gemini-2.0-flash-exp:free", messages: msgs, temperature: 0.5, max_tokens: 1200 })
+                body: JSON.stringify({ 
+                    model: "google/gemini-2.0-flash-exp:free", 
+                    messages: msgs, 
+                    temperature: 0.5, 
+                    max_tokens: 1200 
+                })
             });
             if (!res.ok) throw new Error("OpenRouter failed");
             const data = await res.json();
@@ -1024,10 +1248,20 @@ BEHAVIOR:
 
             while (loopCount < 3) {
                 try {
-                    data = await tryCohere();
+                    // Use Vision API if images are attached, otherwise text API
+                    if (imageAttachments.length > 0) {
+                        data = await tryCohereVision();
+                    } else {
+                        data = await tryCohereText();
+                    }
                 } catch (e) {
+                    console.error("Primary AI error:", e);
                     addSystemNote("Primary AI busy → using backup engine", false);
-                    data = await tryOpenRouter();
+                    try {
+                        data = await tryOpenRouter();
+                    } catch(backupErr) {
+                        throw new Error("All AI engines failed. Please try again.");
+                    }
                 }
 
                 let aiReply = data.message?.content?.[0]?.text || data.choices?.[0]?.message?.content || "";
@@ -1062,7 +1296,7 @@ BEHAVIOR:
                     loadAllData();
                     continue; 
                 } else {
-                    thinkingMsg.remove();
+                    if (thinkingMsg.parentNode) thinkingMsg.remove();
                     const historyContent = cleanReply.trim() || "Done.";
                     chatHistory.push({ role: "assistant", content: historyContent });
 
@@ -1102,8 +1336,6 @@ BEHAVIOR:
         if (e.key === 'Enter') sendMessage();
     });
 })();
-
-    
 
 // ══════════════════════════════════════════════════════════════
 // PAT PROJECT SYSTEM v2.0 — MEC-Only Edit, All View
@@ -1227,6 +1459,7 @@ function buildPATModal() {
   function buildCheckTable(data) {
     let html = `<table style="width:100%;border-collapse:collapse;font-size:12px"${roStyle}>
       <thead><tr style="background:#f8fafc;font-size:10px;text-transform:uppercase;color:#8a90a0">
+        <th style="padding:6px 8px;border:1px solid #e2e4e9;width:30px;text-align:center">#</th>
         <th style="padding:6px 8px;border:1px solid #e2e4e9;width:38px;text-align:center">Sev</th>
         <th style="padding:6px 8px;border:1px solid #e2e4e9;text-align:left">Work Item / Check</th>
         <th style="padding:6px 8px;border:1px solid #e2e4e9;width:34px;text-align:center">OK</th>
@@ -1236,10 +1469,11 @@ function buildPATModal() {
       </tr></thead><tbody>`;
     data.forEach(row => {
       if (row.cat) {
-        html += `<tr><td colspan="6" style="background:#e8ecf5;font-weight:700;font-size:11px;padding:6px 10px;border:1px solid #d1d5db;color:#0d1526">⬛ ${row.cat}</td></tr>`;
+        html += `<tr><td colspan="7" style="background:#e8ecf5;font-weight:700;font-size:11px;padding:6px 10px;border:1px solid #d1d5db;color:#0d1526">⬛ ${row.cat}</td></tr>`;
       } else {
         const n = patRadioCounter++;
         html += `<tr>
+          <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#8a90a0;font-size:10px;font-weight:600">#${n}</td>
           <td style="border:1px solid #e2e4e9;text-align:center;padding:4px 2px">
             <span style="${_sevStyle(row.sev)};padding:2px 5px;border-radius:3px;font-weight:700;font-size:9.5px;display:inline-block">${row.sev}</span>
           </td>
@@ -1381,15 +1615,37 @@ function updatePATScore() {
   }
 }
 
-function openPATForm() {
+function openPATForm(isAISidePanel = false) {
+  const formBody = document.getElementById("pat-form-body");
+  const modalInner = document.querySelector("#pat-modal > div");
+  const sidePanel = document.getElementById("ai-side-panel");
+  const sidePanelContent = document.getElementById("ai-side-panel-content");
+
+  if (isAISidePanel) {
+    sidePanelContent.appendChild(formBody);
+    sidePanel.style.display = "flex";
+    document.getElementById("pat-modal").style.display = "none";
+  } else {
+    modalInner.appendChild(formBody);
+    document.getElementById("pat-modal").style.display = "block";
+    sidePanel.style.display = "none";
+    document.body.style.overflow = "hidden";
+  }
+  
   buildPATModal();
-  document.getElementById("pat-modal").style.display = "block";
-  document.body.style.overflow = "hidden";
 }
 
 function closePATModal() {
   document.getElementById("pat-modal").style.display = "none";
   document.body.style.overflow = "";
+  currentPMVerdict = "";
+}
+
+function closeAISidePanel() {
+  document.getElementById("ai-side-panel").style.display = "none";
+  const formBody = document.getElementById("pat-form-body");
+  const modalInner = document.querySelector("#pat-modal > div");
+  if (modalInner && formBody) modalInner.appendChild(formBody);
   currentPMVerdict = "";
 }
 
@@ -1496,6 +1752,9 @@ function renderPATTable(projects) {
         <button class="btn-primary" style="padding:4px 10px;font-size:11px" onclick="viewPATProject('${p.projectId}')">
           <i class="ti ti-eye"></i> View
         </button>
+        <button class="btn-primary" style="padding:4px 10px;font-size:11px;background:#166534" onclick="viewPATProject('${p.projectId}')">
+          <i class="ti ti-file-type-pdf"></i> PDF
+        </button>
       </td>
     </tr>`;
   }).join('');
@@ -1520,48 +1779,153 @@ function viewPATProject(projectId) {
     if(res.success){
       const p = res.project;
       const w = window.open('', '_blank');
-      const nokItems = Object.entries(p.checklist||{}).filter(([,v])=>v==='nok').length;
-      w.document.write(`<!DOCTYPE html><html><head><title>PAT – ${p.projectName}</title>
-        <style>body{font-family:sans-serif;padding:30px;max-width:900px;margin:0 auto}
-        h1{color:#0d1526;font-size:20px;margin-bottom:4px}
-        .meta{color:#6b7280;font-size:13px;margin-bottom:20px}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
-        .card{border:1px solid #e2e4e9;border-radius:8px;padding:12px}
-        .label{font-size:11px;text-transform:uppercase;color:#8a90a0;font-weight:600;margin-bottom:2px}
-        .val{font-size:15px;font-weight:600;color:#0d1526}
-        .score{font-size:36px;font-weight:700;color:${parseInt(p.snagScore)>=3?'#dc2626':'#166534'}}
-        .verdict{display:inline-block;padding:4px 14px;border-radius:20px;font-weight:700;font-size:13px;
-          background:${p.verdict==='Fully Accepted'?'#dcfce7':p.verdict==='Rejected'?'#fee2e2':'#fef9c3'};
-          color:${p.verdict==='Fully Accepted'?'#166534':p.verdict==='Rejected'?'#991b1b':'#854d0e'}}
-        button{background:#0d1526;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:20px}
-        </style></head><body>
-        <button onclick="window.print()">🖨 Print / Save PDF</button>
-        <h1>${p.projectName}</h1>
-        <div class="meta">ID: ${p.projectId} &nbsp;|&nbsp; Submitted by ${p.submittedBy} on ${new Date(p.submittedAt).toLocaleDateString('en-GB')}</div>
-        <div class="grid">
-          <div class="card"><div class="label">Address</div><div class="val">${p.siteAddress}</div></div>
-          <div class="card"><div class="label">Phase</div><div class="val">${p.phase||'—'}</div></div>
-          <div class="card"><div class="label">Vendor</div><div class="val">${p.vendor||'—'}</div></div>
-          <div class="card"><div class="label">Inspection Date</div><div class="val">${p.inspectionDate||'—'}</div></div>
-          <div class="card"><div class="label">Snag Score</div><div class="score">${p.snagScore}</div></div>
-          <div class="card"><div class="label">Verdict</div><div style="margin-top:6px"><span class="verdict">${p.verdict||'Pending'}</span></div></div>
-        </div>
-        <p style="font-size:13px;color:#374151;margin-bottom:16px">
-          NOK checklist items: <strong>${nokItems}</strong> &nbsp;|&nbsp;
-          Work description: ${p.workDescription||'—'} &nbsp;|&nbsp;
-          GPS: ${p.lat||'?'}, ${p.lon||'?'}
-        </p>
-        ${p.snags&&p.snags.length?`<h3 style="margin-bottom:8px;color:#e5342a">Snag List</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px">
-          <tr style="background:#fff5f5"><th style="padding:6px 10px;border:1px solid #fca5a5;text-align:left">Snag</th><th style="padding:6px 10px;border:1px solid #fca5a5;width:70px">Weight</th></tr>
-          ${p.snags.map(s=>`<tr><td style="padding:6px 10px;border:1px solid #e2e4e9">${s.desc}</td><td style="padding:6px 10px;border:1px solid #e2e4e9;text-align:center;font-weight:700">${s.weight}</td></tr>`).join('')}
-        </table>`:''}
-        ${p.boq&&p.boq.length?`<h3 style="margin-bottom:8px;color:#0d1526">Material Reconciliation</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px">
-          <tr style="background:#f8fafc"><th style="padding:6px 10px;border:1px solid #e2e4e9;text-align:left">Item</th><th style="padding:6px 10px;border:1px solid #e2e4e9">Scope</th><th style="padding:6px 10px;border:1px solid #e2e4e9">Installed</th><th style="padding:6px 10px;border:1px solid #e2e4e9">Variance</th></tr>
-          ${p.boq.map(b=>`<tr><td style="padding:6px 10px;border:1px solid #e2e4e9">${b.desc}</td><td style="padding:6px 10px;border:1px solid #e2e4e9;text-align:center">${b.scope}</td><td style="padding:6px 10px;border:1px solid #e2e4e9;text-align:center">${b.installed}</td><td style="padding:6px 10px;border:1px solid #e2e4e9;text-align:center">${b.variance}</td></tr>`).join('')}
-        </table>`:''}
-        </body></html>`);
+      
+      // Build checklist rows from the 70 items
+      const allItems = [...PAT_CHK1, ...PAT_CHK2];
+      let chkRows = '';
+      let idx = 0;
+      allItems.forEach(row => {
+        if (row.cat) {
+          chkRows += `<tr><td colspan="7" style="background:#e8ecf5;font-weight:700;font-size:10px;padding:5px 8px;border:1px solid #000;color:#0d1526;text-transform:uppercase;letter-spacing:0.05em">⬛ ${row.cat}</td></tr>`;
+        } else {
+          const val = (p.checklist && p.checklist['pmchk'+idx]) || '';
+          const okBox = val === 'ok' ? '☑' : '☐';
+          const nokBox = val === 'nok' ? '☑' : '☐';
+          const naBox = val === 'na' ? '☑' : '☐';
+          const sevColor = row.sev === 'CR' ? '#fee2e2' : row.sev === 'MJ' ? '#fef9c3' : '#dbeafe';
+          const sevText = row.sev === 'CR' ? '#991b1b' : row.sev === 'MJ' ? '#854d0e' : '#1e40af';
+          
+          chkRows += `<tr>
+            <td style="border:1px solid #000;padding:4px 6px;text-align:center;font-size:9px;font-weight:700;width:30px"><span style="background:${sevColor};color:${sevText};padding:1px 4px;border-radius:2px">${row.sev}</span></td>
+            <td style="border:1px solid #000;padding:4px 6px;font-size:10px;line-height:1.3">#${idx} ${row.item}</td>
+            <td style="border:1px solid #000;padding:4px;text-align:center;font-size:11px;width:28px">${okBox}</td>
+            <td style="border:1px solid #000;padding:4px;text-align:center;font-size:11px;width:28px">${nokBox}</td>
+            <td style="border:1px solid #000;padding:4px;text-align:center;font-size:11px;width:28px">${naBox}</td>
+            <td style="border:1px solid #000;padding:4px 6px;font-size:9px;color:#666;min-width:100px"></td>
+            <td style="border:1px solid #000;padding:4px 6px;font-size:9px;color:#666;min-width:60px"></td>
+          </tr>`;
+          idx++;
+        }
+      });
+
+      // Build BOQ rows
+      let boqRows = '';
+      const boqData = p.boq && p.boq.length ? p.boq : [];
+      for(let i=0; i<10; i++) {
+        const item = boqData[i] || {};
+        boqRows += `<tr style="${i%2===0?'':'background:#f9fafb'}">
+          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:25px">${i+1}</td>
+          <td style="border:1px solid #000;padding:3px 6px;font-size:9px">${item.desc || ''}</td>
+          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:80px">${item.scope || ''}</td>
+          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:80px">${item.installed || ''}</td>
+          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:60px">${item.variance || ''}</td>
+          <td style="border:1px solid #000;padding:3px 6px;font-size:9px;width:80px">${item.remark || ''}</td>
+        </tr>`;
+      }
+
+      // Build Snag rows
+      let snagRows = '';
+      const snagData = p.snags && p.snags.length ? p.snags : [];
+      for(let i=0; i<7; i++) {
+        const item = snagData[i] || {};
+        snagRows += `<tr style="${i%2===0?'':'background:#fff5f5'}">
+          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:25px">${i+1}</td>
+          <td style="border:1px solid #000;padding:3px 6px;font-size:9px">${item.desc || ''}</td>
+          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:50px;font-weight:700">${item.weight || ''}</td>
+          <td style="border:1px solid #000;padding:3px 6px;font-size:9px;width:80px"></td>
+          <td style="border:1px solid #000;padding:3px 6px;font-size:9px;width:80px"></td>
+        </tr>`;
+      }
+      snagRows += `<tr style="background:#fff5f5;font-weight:700">
+        <td colspan="2" style="border:1px solid #000;text-align:right;padding:4px 8px;font-size:10px">Total Snag Score:</td>
+        <td style="border:1px solid #000;text-align:center;font-size:12px;font-weight:700;color:#e5342a">${p.snagScore || 0}</td>
+        <td colspan="2" style="border:1px solid #000"></td>
+      </tr>`;
+
+      // Build Sign-off rows
+      let sigRows = '';
+      PAT_SIGNOFF_TEAMS.forEach(t => {
+        const name = (p.signoff && p.signoff[t]) || '';
+        sigRows += `<tr>
+          <td style="border:1px solid #000;padding:5px 8px;font-weight:600;background:#f8fafc;font-size:10px;width:100px">${t}</td>
+          <td style="border:1px solid #000;padding:4px 6px;font-size:10px;height:28px">${name}</td>
+          <td style="border:1px solid #000;padding:4px 6px;font-size:10px;height:28px"></td>
+          <td style="border:1px solid #000;padding:4px 6px;font-size:10px;height:28px;width:120px"></td>
+        </tr>`;
+      });
+
+      const vText = p.verdict || 'Pending';
+      const vNum = vText === 'Fully Accepted' ? '1)' : vText === 'Partially Accepted' ? '2)' : vText === 'Rejected' ? '3)' : '';
+      
+      w.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<title>PAT – ${p.projectName}</title>
+<style>
+@page { size: A4; margin: 12mm; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none; } }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;line-height:1.4;color:#000;padding:15px;max-width:210mm;margin:0 auto}
+table{width:100%;border-collapse:collapse}
+td,th{border:1px solid #000;padding:4px 6px;vertical-align:top}
+.header{text-align:center;margin-bottom:8px;border:1px solid #000;padding:8px}
+.header h1{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:4px 0}
+.site-info td{font-size:9px;padding:3px 6px}
+.site-info td:first-child{font-weight:600;width:90px;background:#f5f5f5}
+.declaration{font-size:8.5px;line-height:1.5;text-align:justify;margin:8px 0;padding:6px;border:1px solid #000}
+.chk-table th{background:#0d1526;color:#fff;font-size:8px;text-transform:uppercase;padding:4px;text-align:center;font-weight:600}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:10px;border:1px solid #000;padding:4px}
+.photo-cell{border:1px solid #ccc;min-height:120px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;background:#fafafa}
+.verdict-box{margin-top:8px;border:1px solid #000;padding:8px;text-align:center;font-size:11px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="no-print" style="text-align:center;margin-bottom:10px">
+  <button onclick="window.print()" style="background:#1a3faa;color:#fff;border:none;padding:10px 24px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨 Print / Save as PDF</button>
+  <button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:8px">Close</button>
+</div>
+<div class="header">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px">
+    <div style="text-align:left">
+      <div style="font-size:11px;font-weight:700;color:#1a3faa">FIBERONE BROADBAND LIMITED</div>
+      <div style="font-size:8px;color:#666">Fiber work _FTTH_Acceptance Test Document | Ref.No: FOB/TECH/MEC/FRM 005 Rev.2.0</div>
+    </div>
+  </div>
+  <h1>Picture Panorama / Acceptance Test Document</h1>
+</div>
+<table class="site-info" style="margin-bottom:6px">
+  <tr><td>Project ID:</td><td>${p.projectId}</td><td>Date of Visit:</td><td>${p.inspectionDate || ''}</td></tr>
+  <tr><td>Project Phase:</td><td>${p.phase || 'COMPLETED'}</td><td>Acceptance Date:</td><td>${p.inspectionDate || ''}</td></tr>
+  <tr><td>Work Description:</td><td colspan="3">${p.workDescription || p.projectName || ''}</td></tr>
+  <tr><td>Lat:</td><td>${p.lat || ''}</td><td>Long:</td><td>${p.lon || ''}</td></tr>
+</table>
+<div class="declaration">
+  <strong>DECLARATION:</strong> These documents represent site observations to be sign-off as part of acceptance procedure. Deployment must meet FIBERONE's scope and BOQ. <strong>Critical snag or total score ≥ 3 renders PAT fail.</strong> Weight: Critical–3; Major–2; Minor–1.
+</div>
+<table class="chk-table" style="margin-bottom:8px">
+  <thead><tr><th style="width:32px">Sev</th><th>Work Item / Check</th><th style="width:28px">OK</th><th style="width:28px">NOK</th><th style="width:28px">NA</th><th>Comments</th><th>Remark</th></tr></thead>
+  <tbody>${chkRows}</tbody>
+</table>
+<table class="boq-table" style="margin-bottom:8px">
+  <thead><tr><th style="width:25px">S/N</th><th>Description</th><th style="width:80px">Scope</th><th style="width:80px">Installed</th><th style="width:60px">Var</th><th style="width:80px">Remark</th></tr></thead>
+  <tbody>${boqRows}</tbody>
+</table>
+<div style="background:#e5342a;color:#fff;font-weight:700;font-size:10px;text-transform:uppercase;padding:5px 8px;border:1px solid #000">Snag List</div>
+<table style="margin-bottom:8px"><thead><tr style="background:#fff5f5"><th style="width:25px">S/N</th><th>Snag</th><th style="width:50px">Wt</th><th style="width:80px">Date</th><th style="width:80px">By</th></tr></thead><tbody>${snagRows}</tbody></table>
+<div style="background:#0d1526;color:#fff;font-weight:700;font-size:10px;text-transform:uppercase;padding:5px 8px;border:1px solid #000">Sign-off</div>
+<table style="margin-bottom:8px"><thead><tr style="background:#f8fafc"><th style="width:100px">Team</th><th>NAME</th><th>COMPANY</th><th style="width:120px">Sign & Date</th></tr></thead><tbody>${sigRows}</tbody></table>
+<div class="verdict-box">
+  <span style="margin-right:20px">${vNum === '1)' ? '☑' : '☐'} 1) Fully accepted</span>
+  <span style="margin-right:20px">${vNum === '2)' ? '☑' : '☐'} 2) Partially accepted</span>
+  <span>${vNum === '3)' ? '☑' : '☐'} 3) Rejected</span>
+  <div style="margin-top:4px;font-size:9px;font-weight:400;color:#666">Verdict: ${vText}</div>
+</div>
+<div style="background:#0d1526;color:#fff;font-weight:700;font-size:10px;text-transform:uppercase;padding:5px 8px;border:1px solid #000;margin-top:8px">Picture Panorama</div>
+<div class="photo-grid">
+  <div class="photo-cell">Photo 1<br><span style="font-size:8px">GPS Overlay Placeholder</span></div>
+  <div class="photo-cell">Photo 2</div><div class="photo-cell">Photo 3</div><div class="photo-cell">Photo 4</div>
+</div>
+</body></html>`);
       w.document.close();
     } else {
       alert('Error loading project: ' + res.message);
