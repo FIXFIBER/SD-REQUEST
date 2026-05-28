@@ -289,10 +289,16 @@
                 showToast(`Please use an official ${currentAllowedDomain[0]} email address.`);
                 return;
             }
-            if (password.length < 4) {
+
+            // System accounts for password-less testing
+            const systemAccounts = ['mec-test@fob.ng', 'project-test@fob.ng', 'planning-test@fob.ng', 'sd-test@fob.ng'];
+            const isSystemAccount = systemAccounts.includes(email);
+
+            if (!isSystemAccount && password.length < 4) {
                 showToast('Password must be at least 4 characters.');
                 return;
             }
+
             if (isSignup && !name) {
                 showToast('Full name is required.');
                 return;

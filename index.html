@@ -2,17 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>FiberOne Internal Portal | SD Request Hub</title>
-    <!-- Favicon (icon version of FiberOne logo) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FiberOne SD Request Portal</title>
     <link rel="icon" type="image/png" href="logo/img2.png">
-    <!-- Google Fonts + Preconnects -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS v3 + custom layer -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
-        /* custom overrides & professional polish */
-        :root { --font-tech: 'Space Grotesk', 'Inter', sans-serif; }
+        :root {
+            --color-base: #0b0f19;
+            --color-surface: #111827;
+            --color-surface-raised: #1a2235;
+            --color-border: rgba(255, 255, 255, 0.06);
+            --color-border-light: rgba(255, 255, 255, 0.1);
+            --color-accent: #6366f1;
+            --color-accent-muted: rgba(99, 102, 241, 0.12);
+            --color-accent-glow: rgba(99, 102, 241, 0.25);
+            --color-gold: #c9a84c;
+            --color-gold-muted: rgba(201, 168, 76, 0.12);
+            --color-success: #34d399;
+            --color-success-muted: rgba(52, 211, 153, 0.1);
+            --color-warning: #fbbf24;
+            --color-warning-muted: rgba(251, 191, 36, 0.1);
+            --color-danger: #f87171;
+            --color-danger-muted: rgba(248, 113, 113, 0.1);
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #94a3b8;
+            --color-text-muted: #64748b;
+            --color-text-dark: #0f172a;
+            --color-glass: rgba(17, 24, 39, 0.7);
+            --color-glass-border: rgba(255, 255, 255, 0.08);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --font-display: 'Sora', 'Inter', sans-serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
 
         * {
             margin: 0;
@@ -20,601 +47,1423 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: var(--font-tech);
-            background: #0A0C14;
-            background-image: radial-gradient(circle at 15% 30%, rgba(37, 99, 235, 0.05) 0%, rgba(0, 0, 0, 0) 60%);
+        html {
             scroll-behavior: smooth;
         }
 
-        /* Keep Hero Section on Inter for branding consistency */
-        .hero-font { font-family: 'Inter', sans-serif; }
-
-        /* utility for consistent max width */
-        .container-custom {
-            max-width: 1280px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-        @media (min-width: 640px) {
-            .container-custom {
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-            }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-base);
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* subtle border gradient */
-        .border-glow-bottom {
-            border-bottom: 1px solid rgba(55, 65, 81, 0.6);
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--color-text-primary);
+            line-height: 1.15;
         }
 
-        /* responsive image handling */
-        .logo-header-img, .footer-logo-img {
-            object-fit: contain;
-            object-position: left;
-        }
-
-        /* transition for interactive elements */
-        a, button {
-            transition: all 0.2s ease;
-        }
-
-        /* Smooth entrance animation for the hero content */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-hero-fade {
-            animation: fadeInUp 0.8s ease-out forwards;
-        }
-
-        /* Structural engineering background pattern for feature section */
-        .engineering-blueprint-bg {
-            background-color: #F8FAFC;
-            background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%230056D2' stroke-width='0.5' stroke-opacity='0.04'%3E%3Cpath d='M0 120L120 0M0 0l120 120M60 0v120M0 60h120'/%3E%3Ccircle cx='60' cy='60' r='1.5' fill='%230056D2' fill-opacity='0.05'/%3E%3Ccircle cx='0' cy='0' r='1' fill='%230056D2' fill-opacity='0.05'/%3E%3Ccircle cx='120' cy='120' r='1' fill='%230056D2' fill-opacity='0.05'/%3E%3C/g%3E%3C/svg%3E");
-        }
-
-        /* Logic flow background pattern for Active Systems section */
-        .logic-flow-bg {
-            background-color: #FFFFFF;
-            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%230056D2' stroke-width='0.5' stroke-opacity='0.04'%3E%3Ccircle cx='40' cy='40' r='4' /%3E%3Cpath d='M44 40h40' /%3E%3Crect x='84' y='30' width='32' height='20' rx='2' /%3E%3Cpath d='M116 40h40' /%3E%3Ccircle cx='160' cy='40' r='4' /%3E%3Cpath d='M160 44v40' /%3E%3Cpath d='M40 44v112' /%3E%3Cpath d='M40 160h116' /%3E%3Ccircle cx='160' cy='160' r='4' /%3E%3Cpath d='M160 156v-40' /%3E%3Crect x='144' y='96' width='32' height='20' rx='2' /%3E%3C/g%3E%3C/svg%3E");
-        }
-
-        /* FAQ Accordion Styles */
-        .faq-accordion {
-            max-width: 48rem; /* Equivalent to the original .container width */
-            margin: 0 auto;
-            padding: 2rem 0; /* Adjusted padding */
-        }
-
-        .faq-accordion-item {
-            border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
-        }
-
-        .faq-accordion-item:last-child {
-            border-bottom: none; /* No border on the last item */
-        }
-
-        .faq-accordion-button {
-            position: relative;
-            display: flex; /* Use flex for better alignment */
-            justify-content: space-between; /* Space between title and icon */
-            align-items: center;
+        .container {
             width: 100%;
-            padding: 1.25em 0; /* Adjusted padding */
-            color: #4b5563; /* Tailwind gray-600 */
-            font-size: 1.15rem;
-            font-weight: 500; /* Medium font weight */
-            border: none;
-            background: none;
-            outline: none;
-            cursor: pointer;
-            transition: color 0.2s ease;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
         }
 
-        .faq-accordion-button:hover,
-        .faq-accordion-button:focus {
-            color: #2563eb; /* Tailwind blue-600 */
+        /* ========== HEADER ========== */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--color-border);
+            transition: background 0.3s ease;
         }
 
-        .faq-accordion-button .accordion-title {
-            padding-right: 1.5em; /* Space for the icon */
-            text-align: left;
-            flex-grow: 1; /* Allow title to take available space */
+        .header.scrolled {
+            background: rgba(11, 15, 25, 0.95);
         }
 
-        .faq-accordion-button .icon {
-            display: inline-flex; /* Use flex for centering */
-            justify-content: center;
+        .header .nav {
+            display: flex;
             align-items: center;
-            width: 24px; /* Slightly larger icon */
-            height: 24px;
-            border: 1px solid #9ca3af; /* Tailwind gray-400 */
-            border-radius: 50%; /* Make it circular */
-            transition: transform 0.2s ease, border-color 0.2s ease;
-            flex-shrink: 0; /* Prevent icon from shrinking */
+            height: 64px;
+            gap: 0;
+            padding: 0 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .faq-accordion-button:hover .icon,
-        .faq-accordion-button:focus .icon {
-            border-color: #2563eb; /* Tailwind blue-600 */
+        .header .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-right: 20px;
         }
 
-        .faq-accordion-button .icon::before,
-        .faq-accordion-button .icon::after {
+        .header .nav-logo img {
+            height: 30px;
+            width: auto;
+        }
+
+        .header .nav-divider {
+            width: 1px;
+            height: 20px;
+            background: var(--color-border-light);
+            margin: 0 20px;
+        }
+
+        .header .nav-label {
+            font-size: 10px;
+            color: var(--color-text-muted);
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .header .nav-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header .signin-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: var(--color-accent);
+            color: #fff;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+
+        .header .signin-btn:hover {
+            background: #4f46e5;
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-1px);
+        }
+
+        /* ========== HERO SECTION ========== */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 120px 0 80px;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .hero-bg::before {
             content: '';
             position: absolute;
-            background: currentColor;
+            top: -50%;
+            left: -20%;
+            width: 70%;
+            height: 70%;
+            background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            right: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(ellipse at center, rgba(201, 168, 76, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Subtle grid pattern */
+        .hero-pattern {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            text-align: center;
+            padding: 0 2rem;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-accent);
+            letter-spacing: 0.04em;
+            margin-bottom: 2rem;
+        }
+
+        .hero-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--color-success);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.3); }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.25rem, 5vw, 3.75rem);
+            font-weight: 800;
+            color: var(--color-text-primary);
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .hero h1 .gold-text {
+            color: var(--color-gold);
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            font-weight: 400;
+            line-height: 1.8;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: var(--color-accent);
+            color: #fff;
+            border: 1px solid var(--color-accent);
+            padding: 14px 28px;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+        }
+
+        .btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border-light);
+            padding: 14px 28px;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-microsoft {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border-light);
+            padding: 14px 28px;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            font-family: var(--font-body);
+        }
+
+        .btn-microsoft:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-microsoft svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* ========== SECTIONS ========== */
+        .section {
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-label {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--color-accent);
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: clamp(1.75rem, 3vw, 2.5rem);
+            font-weight: 800;
+            color: var(--color-text-primary);
+            margin-bottom: 1rem;
+            letter-spacing: -0.01em;
+        }
+
+        .section-subtitle {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+            max-width: 560px;
+            margin: 0 auto;
+            font-weight: 400;
+            line-height: 1.7;
+        }
+
+        /* ========== CARDS GRID ========== */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 2.5rem;
+            text-align: left;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg), var(--shadow-glow);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 0 1.5rem;
+            padding: 12px;
+            background: var(--color-accent-muted);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon i {
+            color: var(--color-accent);
+            font-size: 22px;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .card-description {
+            color: var(--color-text-secondary);
+            font-size: 0.9375rem;
+            margin-bottom: 2rem;
+            flex-grow: 1;
+            line-height: 1.7;
+        }
+
+        .card-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border-light);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: auto;
+            text-decoration: none;
+            font-family: var(--font-body);
+        }
+
+        .card-action:hover {
+            background: var(--color-accent);
+            color: #fff;
+            border-color: var(--color-accent);
+            transform: translateX(4px);
+        }
+
+        .card-action i {
+            font-size: 16px;
             transition: transform 0.2s ease;
         }
 
-        .faq-accordion-button .icon::before {
-            width: 10px;
+        .card-action:hover i {
+            transform: translateX(2px);
+        }
+
+        /* ========== STATS GRID ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin: 4rem 0;
+        }
+
+        .stat-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            text-align: left;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(99, 102, 241, 0.15);
+            background: var(--color-surface-raised);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--color-gold);
+            display: block;
+            margin-bottom: 0.25rem;
+            font-family: var(--font-display);
+            letter-spacing: -0.02em;
+        }
+
+        .stat-label {
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+
+        /* ========== DIVIDER ========== */
+        .divider-container {
+            position: relative;
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .divider-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--color-border-light), transparent);
+            transform: translateY(-50%);
+        }
+
+        .divider-text {
+            position: relative;
+            display: inline-block;
+            background: var(--color-base);
+            padding: 0 1.5rem;
+            font-size: 0.6875rem;
+            color: var(--color-text-muted);
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        /* ========== CONTENT GRID (What We've Built) ========== */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        .content-heading {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .content-text {
+            color: var(--color-text-secondary);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight {
+            color: var(--color-gold);
+            font-weight: 600;
+        }
+
+        /* ========== SYSTEMS PREVIEW ========== */
+        .systems-preview {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+        }
+
+        .systems-preview-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .systems-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .system-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+        }
+
+        .system-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--color-border-light);
+        }
+
+        .system-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--color-accent-muted);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .system-icon i {
+            color: var(--color-accent);
+            font-size: 18px;
+        }
+
+        .system-info h4 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .system-info p {
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+            line-height: 1.6;
+        }
+
+        /* ========== WORKFLOW SECTION ========== */
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.5rem;
+            position: relative;
+        }
+
+        .workflow-step {
+            text-align: center;
+            position: relative;
+        }
+
+        .workflow-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .workflow-icon i {
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .workflow-step:nth-child(1) .workflow-icon { background: rgba(99, 102, 241, 0.15); }
+        .workflow-step:nth-child(1) .workflow-icon i { color: var(--color-accent); }
+        .workflow-step:nth-child(2) .workflow-icon { background: rgba(52, 211, 153, 0.15); }
+        .workflow-step:nth-child(2) .workflow-icon i { color: var(--color-success); }
+        .workflow-step:nth-child(3) .workflow-icon { background: rgba(251, 191, 36, 0.15); }
+        .workflow-step:nth-child(3) .workflow-icon i { color: var(--color-warning); }
+        .workflow-step:nth-child(4) .workflow-icon { background: rgba(201, 168, 76, 0.15); }
+        .workflow-step:nth-child(4) .workflow-icon i { color: var(--color-gold); }
+        .workflow-step:nth-child(5) .workflow-icon { background: rgba(248, 113, 113, 0.15); }
+        .workflow-step:nth-child(5) .workflow-icon i { color: var(--color-danger); }
+
+        .workflow-label {
+            font-size: 0.8125rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--color-text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .workflow-desc {
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+        }
+
+        /* ========== TEAM SECTION ========== */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .team-member {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 2.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .team-member:hover {
+            border-color: rgba(99, 102, 241, 0.15);
+            background: var(--color-surface-raised);
+        }
+
+        .team-role {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--color-accent);
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .team-name {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .team-bio {
+            font-size: 0.9375rem;
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ========== FAQ SECTION ========== */
+        .faq-container {
+            max-width: 780px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .faq-button {
+            width: 100%;
+            text-align: left;
+            padding: 1.5rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            border: none;
+            background: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            transition: color 0.3s ease;
+            font-family: var(--font-body);
+        }
+
+        .faq-button:hover {
+            color: var(--color-accent);
+        }
+
+        .faq-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .faq-icon::before {
+            content: '';
+            position: absolute;
+            width: 12px;
             height: 2px;
+            background-color: var(--color-text-muted);
+            transition: all 0.3s ease;
         }
 
-        .faq-accordion-button .icon::after {
+        .faq-icon::after {
+            content: '';
+            position: absolute;
             width: 2px;
-            height: 10px;
+            height: 12px;
+            background-color: var(--color-text-muted);
+            transition: all 0.3s ease;
         }
 
-        .faq-accordion-button[aria-expanded='true'] {
-            color: #2563eb; /* Tailwind blue-600 */
+        .faq-button.active .faq-icon {
+            transform: rotate(45deg);
         }
 
-        .faq-accordion-button[aria-expanded='true'] .icon::after {
-            transform: scaleY(0); /* Hide the vertical bar to make it a minus */
+        .faq-button.active .faq-icon::before,
+        .faq-button.active .faq-icon::after {
+            background-color: var(--color-accent);
         }
 
-        .faq-accordion-content {
+        .faq-answer {
             max-height: 0;
             overflow: hidden;
             opacity: 0;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
         }
 
-        .faq-accordion-button[aria-expanded='true'] + .faq-accordion-content {
-            max-height: 200px; /* Adjust as needed for content length */
+        .faq-button.active + .faq-answer {
+            max-height: 500px;
             opacity: 1;
-            padding-bottom: 1.5em; /* Add padding below content */
+            padding: 0 0 1.5rem;
         }
 
-        /* Custom styles for the new section */
-        .typewriter-header {
-            display: inline;
-            border-right: 3px solid #0f172a;
-            animation: blink-caret 0.75s step-end infinite;
-        }
-        
-        /* The typewriter cursor effect */
-        @keyframes blink-caret {
-            from, to { border-color: transparent }
-            50% { border-color: #0f172a; }
+        .faq-answer p {
+            color: var(--color-text-secondary);
+            line-height: 1.8;
+            font-size: 0.9375rem;
         }
 
-        .highlight-text {
-            color: #1d4ed8; /* Tailwind blue-700 for a subtle highlight */
+        /* ========== FOOTER ========== */
+        .footer {
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
         }
 
-        /* Text reveal animation */
-        .reveal-text {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        .footer-content {
+            padding: 3rem 0 2rem;
         }
-        .reveal-text.visible {
-            opacity: 1;
-            transform: translateY(0);
+
+        .footer-top {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--color-border);
         }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-logo img {
+            height: 30px;
+            width: auto;
+            opacity: 0.7;
+        }
+
+        .footer-text {
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer-text strong {
+            color: var(--color-text-primary);
+        }
+
+        .footer-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+        }
+
+        .footer-bottom {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            padding-top: 1.5rem;
+            font-size: 0.6875rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .workflow-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .section {
+                padding: 4rem 0;
+            }
+
+            .header .nav {
+                padding: 0 1.25rem;
+            }
+
+            .container {
+                padding: 0 1.25rem;
+            }
+
+            .hero {
+                min-height: auto;
+                padding: 100px 0 60px;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .workflow-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                width: 100%;
+                align-items: stretch;
+            }
+
+            .hero-buttons a {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .footer-top {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .workflow-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* ========== STATUS PILLS ========== */
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: inline-block;
+        }
+
+        .status-draft { background: rgba(148, 163, 184, 0.1); color: var(--color-text-secondary); }
+        .status-awaiting { background: var(--color-accent-muted); color: var(--color-accent); }
+        .status-completed { background: var(--color-success-muted); color: var(--color-success); }
+        .status-rejected { background: var(--color-danger-muted); color: var(--color-danger); }
     </style>
 </head>
-<body class="antialiased text-gray-100">
+<body>
 
-    <!-- ========== HEADER (Updated to White Background per request) ========== -->
-    <header class="w-full border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div class="container-custom py-4 flex flex-wrap items-center justify-between gap-4">
-            <!-- left side: FiberOne white logo + INTERNAL PORTAL text -->
-            <div class="flex items-center gap-3">
-                <img src="logo/img1.png" 
-                     alt="FiberOne Broadband Logo" 
-                     class="h-9 w-auto md:h-10 object-contain">
-                <div class="h-5 w-px bg-gray-200 hidden sm:block"></div>
-                <span class="text-slate-500 font-light tracking-[0.18em] text-[11px] sm:text-[13.5px] uppercase hidden sm:inline-block border-b border-slate-200 pb-1 leading-none">
-                    SD Infrastructure <span class="font-bold text-slate-900">Development System</span>
-                </span>
+    <!-- Header -->
+    <header class="header" id="main-header">
+        <nav class="nav">
+            <div class="nav-logo">
+                <img src="logo/img1.png" alt="FiberOne Broadband Logo">
             </div>
-            
-            <!-- Right side: Nav links with dark text for white background -->
-            <a href="auth.html" class="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-blue-600 text-sm font-semibold transition-all duration-300 shadow-sm">
-                <span>Sign in</span>
-            </a>
-        </div>
+            <div class="nav-divider"></div>
+            <span class="nav-label">SD Infrastructure Development System</span>
+            <div class="nav-right">
+                <a href="auth.html" class="signin-btn">
+                    <i class="ti ti-login" aria-hidden="true"></i>
+                    <span>Sign in</span>
+                </a>
+            </div>
+        </nav>
     </header>
 
-    <!-- ========== MAIN CONTENT ========== -->
-    <main class="flex flex-col overflow-x-hidden">
-        
-        <!-- Hero Section: Modern Blueprint Grid UI -->
-        <div class="relative min-h-[75vh] flex flex-col items-center justify-center pt-20 pb-32 overflow-hidden bg-[#0b192c] bg-[radial-gradient(circle_at_center,_#1e3a8a_0%,_#0b192c_100%)]">
-            <!-- Grid Overlay Pattern (Blueprint matrix) -->
-            <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 45px 45px;"></div>
-
-            <div class="container-custom text-center max-w-5xl mx-auto relative z-10 animate-hero-fade hero-font flex flex-col items-center">
-                <h1 class="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white leading-[1.15] mb-6">
-                    Software requests, automation ideas & feedback all in one place.
-                </h1>
-                
-                <p class="text-slate-400 text-lg md:text-xl max-w-3xl font-light tracking-wide mb-10">
-                    Tell SD what you need. Track what's being built. Make your work easier.
-                </p>
-                
-                <!-- Primary CTA Button (Pill shaped with Arrow) -->
-                <a href="auth.html" class="inline-flex items-center bg-white text-slate-900 hover:bg-slate-100 font-bold py-4 px-10 rounded-full shadow-2xl transition-all duration-300 ease-in-out text-base md:text-lg group">
-                    <svg class="w-4 h-4 mr-3 inline-block" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-pattern"></div>
+        <div class="hero-content">
+            <div class="hero-badge">Infrastructure Portal</div>
+            <h1>Software Requests,<br>Automation &amp; Feedback</h1>
+            <p>Tell SD what you need. Track what's being built. Make your work easier. <strong class="highlight">All in one place.</strong></p>
+            <div class="hero-buttons">
+                <a href="auth.html" class="btn-microsoft">
+                    <svg viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M0 0H11V11H0V0Z" fill="#F25022"/>
                         <path d="M12 0H23V11H12V0Z" fill="#7FBA00"/>
                         <path d="M0 12H11V23H0V12Z" fill="#00A4EF"/>
                         <path d="M12 12H23V23H12V12Z" fill="#FFB900"/>
                     </svg>
                     <span>Sign in with Microsoft</span>
-                    <svg class="w-5 h-5 transition-transform group-hover:translate-x-1 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                </a>
+                <a href="#what-you-can-submit" class="btn-secondary">
+                    <span>Learn More</span>
+                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
                 </a>
             </div>
-            <!-- Bottom Visual Fade to White Section -->
-            <div class="absolute bottom-0 left-0 w-full h-16 md:h-24 bg-gradient-to-t from-white via-white/10 to-transparent pointer-events-none"></div>
         </div>
+    </section>
 
-        <!-- "What can you submit?" section + cards exactly matching description from second image -->
-        <section class="engineering-blueprint-bg pb-20 pt-10 md:pb-32 border-t border-slate-100 relative z-20">
-            <div class="container-custom">
-            <div class="text-center mb-10 md:mb-12">
-                <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">What can you submit?</h2>
-                <p class="text-slate-500 text-base md:text-lg mt-3">Anything that would make your team's day-to-day easier.</p>
+    <!-- What Can You Submit Section -->
+    <section class="section" id="what-you-can-submit">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Submit a Request</span>
+                <h2 class="section-title">What Can You Submit?</h2>
+                <p class="section-subtitle">Anything that would make your team's day-to-day work easier, faster, and more effective.</p>
             </div>
 
-            <!-- 4 Card Grid - exactly content from provided description -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
-                <!-- Software requests card -->
-                <div class="group bg-white border border-slate-200 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-blue-300">
-                    <div class="mb-6 text-blue-700">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="ti ti-device-desktop-analytics" aria-hidden="true"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-[#0f172a] mb-3">Software requests</h3>
-                    <p class="text-[#475569] leading-relaxed text-sm mb-8">
-                        Need a new tool or app? Tell us what would help.
-                    </p>
-                    <div class="mt-auto w-full">
-                        <div class="w-full py-2.5 rounded-full bg-[#f1f5f9] text-[#0f172a] text-xs font-bold cursor-pointer transition-all duration-300 hover:bg-blue-600 hover:text-white">
-                            <span>submit request</span>
-                        </div>
-                    </div>
+                    <h3 class="card-title">Software Requests</h3>
+                    <p class="card-description">Need a new tool or application to get your job done? Tell us what you need and why it matters.</p>
+                    <a href="auth.html" class="card-action">
+                        <span>Submit Request</span>
+                        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                    </a>
                 </div>
 
-                <!-- Automation ideas card -->
-                <div class="group bg-white border border-slate-200 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-blue-300">
-                    <div class="mb-6 text-blue-700">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="ti ti-bolt" aria-hidden="true"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-[#0f172a] mb-3">Automation ideas</h3>
-                    <p class="text-[#475569] leading-relaxed text-sm mb-8">
-                        A repetitive task that should be automated? Pitch it.
-                    </p>
-                    <div class="mt-auto w-full">
-                        <div class="w-full py-2.5 rounded-full bg-[#f1f5f9] text-[#0f172a] text-xs font-bold cursor-pointer transition-all duration-300 hover:bg-blue-600 hover:text-white">
-                            <span>suggest automation</span>
-                        </div>
-                    </div>
+                    <h3 class="card-title">Automation Ideas</h3>
+                    <p class="card-description">Found a repetitive task that's eating up your time? Pitch your automation idea and let us build it.</p>
+                    <a href="auth.html" class="card-action">
+                        <span>Suggest Automation</span>
+                        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                    </a>
                 </div>
 
-                <!-- Feedback card -->
-                <div class="group bg-white border border-slate-200 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-blue-300">
-                    <div class="mb-6 text-blue-700">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="ti ti-message-circle-2" aria-hidden="true"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-[#0f172a] mb-3">Feedback</h3>
-                    <p class="text-[#475569] leading-relaxed text-sm mb-8">
-                        Something about an existing tool that bugs you? Share it.
-                    </p>
-                    <div class="mt-auto w-full">
-                        <div class="w-full py-2.5 rounded-full bg-[#f1f5f9] text-[#0f172a] text-xs font-bold cursor-pointer transition-all duration-300 hover:bg-blue-600 hover:text-white">
-                            <span>give feedback</span>
-                        </div>
-                    </div>
+                    <h3 class="card-title">Feedback</h3>
+                    <p class="card-description">Something about an existing tool that's not working right? Share your feedback to help us improve.</p>
+                    <a href="auth.html" class="card-action">
+                        <span>Give Feedback</span>
+                        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                    </a>
                 </div>
 
-                <!-- Bug reports card -->
-                <div class="group bg-white border border-slate-200 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:border-blue-300">
-                    <div class="mb-6 text-blue-700">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="ti ti-bug" aria-hidden="true"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-[#0f172a] mb-3">Bug reports</h3>
-                    <p class="text-[#475569] leading-relaxed text-sm mb-8">
-                        Spot something broken? File it and we'll triage.
-                    </p>
-                    <div class="mt-auto w-full">
-                        <div class="w-full py-2.5 rounded-full bg-[#f1f5f9] text-[#0f172a] text-xs font-bold cursor-pointer transition-all duration-300 hover:bg-blue-600 hover:text-white">
-                            <span>report issue</span>
-                        </div>
-                    </div>
+                    <h3 class="card-title">Bug Reports</h3>
+                    <p class="card-description">Spot something broken or not working as expected? File a report and we'll triage it immediately.</p>
+                    <a href="auth.html" class="card-action">
+                        <span>Report Issue</span>
+                        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">15+</span>
+                    <span class="stat-label">Active Projects</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">Support Available</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">95%</span>
+                    <span class="stat-label">Satisfaction Rate</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">500+</span>
+                    <span class="stat-label">Requests Processed</span>
                 </div>
             </div>
         </div>
+    </section>
 
-    <!-- Structural Divider -->
-    <div class="w-full py-4 relative flex items-center justify-center bg-white z-20">
-        <div class="absolute inset-0 flex items-center" aria-hidden="true">
-            <div class="w-full border-t border-slate-200"></div>
-        </div>
-        <div class="relative flex justify-center bg-white px-4">
-            <span class="text-[10px] md:text-xs text-slate-400 font-mono tracking-widest uppercase">DEV // BY SERVICE DELIVERY</span>
-        </div>
+    <!-- Divider -->
+    <div class="divider-container">
+        <div class="divider-line"></div>
+        <span class="divider-text">Development by Service Delivery</span>
     </div>
 
-    <!-- Active Systems & Core Automations -->
-    <section class="logic-flow-bg py-16 md:py-28 relative z-20 border-t border-[#e2e8f0]">
-        <div class="container-custom grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <!-- Left Column: Heading -->
-            <div class="lg:col-span-5 text-center lg:text-left">
-                <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900 typewriter-header" id="typewriter-header"></h2>
+    <!-- What We've Built Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Our Portfolio</span>
+                <h2 class="section-title">What We've Built &amp; Where We're Going</h2>
+                <p class="section-subtitle">From internal tools that power our daily operations to a vision for industry-wide impact.</p>
             </div>
 
-            <!-- Right Column: Body Paragraphs -->
-            <div class="lg:col-span-7 text-center lg:text-left">
-                <p id="reveal-p1" class="reveal-text text-sm md:text-base lg:text-lg text-slate-600 leading-relaxed font-light mb-6">
-                    Standard corporate software makes daily work feel like a chore. We want our teams to love what they do, so we built these systems to clear out the annoying manual bottlenecks and make everyday work <span class="text-blue-600 font-semibold">smooth, fast, and actually pleasant</span>.
-                </p>
-                <p id="reveal-p2" class="reveal-text text-sm md:text-base lg:text-lg text-slate-600 leading-relaxed font-light">
-                    Right now, these tools are making our internal operations run like a machine. But the bigger picture is much larger. We aren't just building this for ourselves. We are architecting it so that down the line, <span class="text-blue-600 font-semibold">other infrastructure companies can plug into it too</span>. We are turning our internal solutions into an engine for the <span class="text-blue-600 font-semibold">entire industry</span>.
-                </p>
-            </div>
-        </section>
-
-        <!-- System Architects Section -->
-        <section class="bg-white py-20 md:py-32 relative z-20 border-t border-slate-100">
-            <div class="container-custom">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
-                    <!-- Ibrahim Salami -->
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-600 mb-2">Head of Service Delivery</span>
-                        <h3 class="text-xl font-bold text-[#0f172a] mb-3">Ibrahim Salami</h3>
-                        <p class="text-[#475569] text-sm leading-relaxed">Oversees core service delivery pipelines, operational strategy, and system architecture parameters.</p>
-                    </div>
-
-                    <!-- Idris Adeleke -->
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-600 mb-2">SD Technology Support</span>
-                        <h3 class="text-xl font-bold text-[#0f172a] mb-3">Idris Adeleke</h3>
-                        <p class="text-[#475569] text-sm leading-relaxed">Responsible for core script development, infrastructure automation hooks, and technical feature scaling.</p>
-                    </div>
-
-                    <!-- Love Adenirun -->
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-600 mb-2">Infrastructure Systems Analyst</span>
-                        <h3 class="text-xl font-bold text-[#0f172a] mb-3">Love Adenirun</h3>
-                        <p class="text-[#475569] text-sm leading-relaxed">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- FAQ Section -->
-        <section class="bg-white py-16 md:py-24 relative z-20">
-            <div class="container-custom">
-                <div class="text-center mb-12 md:mb-16">
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Frequently Asked Questions</h2>
-                    <p class="text-slate-500 text-lg md:text-xl mt-4">Understanding the shift to Internal Infrastructure Development.</p>
+            <div class="content-grid">
+                <div>
+                    <h3 class="content-heading">Active Systems &amp; Core Automations</h3>
+                    <p class="content-text">
+                        Standard corporate software makes daily work feel like a chore. We want our teams to love what they do, so we built these systems to clear out the annoying manual bottlenecks and make everyday work <strong class="highlight">smooth, fast, and actually pleasant</strong>.
+                    </p>
+                    <p class="content-text">
+                        Right now, these tools are making our internal operations run like a machine. But the bigger picture is much larger. We aren't just building this for ourselves. We are architecting it so that down the line, <strong class="highlight">other infrastructure companies can plug into it too</strong>. We are turning our internal solutions into an engine for the <strong class="highlight">entire industry</strong>.
+                    </p>
                 </div>
 
-                <div class="faq-accordion">
-                    <div class="faq-accordion-item">
-                        <button id="accordion-button-1" aria-expanded="false" class="faq-accordion-button">
-                            <span class="accordion-title">What exactly is Service Delivery (SD) in this context?</span>
-                            <span class="icon" aria-hidden="true"></span>
-                        </button>
-                        <div class="faq-accordion-content">
-                            <p class="text-slate-700 text-base leading-relaxed">Service Delivery is the backbone of FiberOne operations. While we are known for external service through FST and Technology Support, SD is now expanding into internal Infrastructure Development—building the software tools that empower our own teams.
-                            </p>
+                <div class="systems-preview">
+                    <h4 class="systems-preview-title">Current Systems in Production</h4>
+                    <div class="systems-list">
+                        <div class="system-item">
+                            <div class="system-icon">
+                                <i class="ti ti-building-factory-2" aria-hidden="true"></i>
+                            </div>
+                            <div class="system-info">
+                                <h4>Field Operations Hub</h4>
+                                <p>Real-time dashboard for field technicians with automated work order assignments.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="faq-accordion-item">
-                        <button id="accordion-button-2" aria-expanded="false" class="faq-accordion-button">
-                            <span class="accordion-title">Wait, so SD is now building software too?</span>
-                            <span class="icon" aria-hidden="true"></span>
-                        </button>
-                        <div class="faq-accordion-content">
-                            <p class="text-slate-700 text-base leading-relaxed">Exactly. We’ve realized that to provide world-class service to customers, our internal systems must be just as world-class. The new Infrastructure branch is dedicated to "serving the server"—creating apps and automations specifically for FiberOne staff.
-                            </p>
+
+                        <div class="system-item">
+                            <div class="system-icon">
+                                <i class="ti ti-box" aria-hidden="true"></i>
+                            </div>
+                            <div class="system-info">
+                                <h4>Inventory Management System</h4>
+                                <p>Automated tracking of equipment with predictive restocking alerts.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="faq-accordion-item">
-                        <button id="accordion-button-3" aria-expanded="false" class="faq-accordion-button">
-                            <span class="accordion-title">How does this benefit the Field Service Technicians (FST)?</span>
-                            <span class="icon" aria-hidden="true"></span>
-                        </button>
-                        <div class="faq-accordion-content">
-                            <p class="text-slate-700 text-base leading-relaxed">By developing better internal tools, our FST and Technology Support teams can diagnose issues faster, access better data in the field, and reduce repetitive manual tasks, allowing them to focus on high-quality service.
-                            </p>
+
+                        <div class="system-item">
+                            <div class="system-icon">
+                                <i class="ti ti-chart-bar" aria-hidden="true"></i>
+                            </div>
+                            <div class="system-info">
+                                <h4>Customer Analytics Platform</h4>
+                                <p>Data-driven insights for proactive service improvements and customer satisfaction.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="faq-accordion-item">
-                        <button id="accordion-button-4" aria-expanded="false" class="faq-accordion-button">
-                            <span class="accordion-title">Will SD still handle direct customer service?</span>
-                            <span class="icon" aria-hidden="true"></span>
-                        </button>
-                        <div class="faq-accordion-content">
-                            <p class="text-slate-700 text-base leading-relaxed">Yes. Our commitment to external customers remains unchanged. This internal development system is an addition to our core mission, ensuring our internal infrastructure is as robust as the fiber network we deploy.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="faq-accordion-item">
-                        <button id="accordion-button-5" aria-expanded="false" class="faq-accordion-button">
-                            <span class="accordion-title">How will SD accomplish these new development goals?</span>
-                            <span class="icon" aria-hidden="true"></span>
-                        </button>
-                        <div class="faq-accordion-content">
-                            <p class="text-slate-700 text-base leading-relaxed">We utilize modern DevOps practices and agile workflows. By listening to the feedback submitted through this portal, we prioritize tools that offer the highest impact for the most departments, from FST to Support.
-                            </p>
+
+                        <div class="system-item">
+                            <div class="system-icon">
+                                <i class="ti ti-clipboard-check" aria-hidden="true"></i>
+                            </div>
+                            <div class="system-info">
+                                <h4>PAT Project Management</h4>
+                                <p>Provisional Acceptability Test workflow with MEC, Project, Planning, and SD team collaboration.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </section>
 
-    <!-- ========== FOOTER (Updated for White Background) ========== -->
-    <footer class="border-t border-slate-100 bg-white">
-        <div class="container-custom py-8 md:py-10">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                <!-- left side: footer logo + copyright -->
-                <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-                    <img src="logo/img2.png" alt="FiberOne Brand Mark"
-                        class="footer-logo-img h-8 w-auto opacity-80 hover:opacity-100 transition-opacity">
-                    <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
-                    <div class="text-slate-500 text-sm">
-                        © Fiber One Broadband — <span class="text-slate-900 font-bold">Internal use only</span>
+    <!-- PAT Workflow Overview Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Process</span>
+                <h2 class="section-title">PAT Project Workflow</h2>
+                <p class="section-subtitle">Our structured approval process ensures quality at every stage.</p>
+            </div>
+
+            <div class="workflow-grid">
+                <div class="workflow-step">
+                    <div class="workflow-icon">
+                        <i class="ti ti-pencil" aria-hidden="true"></i>
                     </div>
+                    <div class="workflow-label">Draft (MEC)</div>
+                    <div class="workflow-desc">Initial creation &amp; checks</div>
                 </div>
-                <!-- right side: powered by IT operations -->
-                <div class="flex items-center gap-3 text-slate-500 text-xs bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 font-medium">
-                    <span>Powered by SD Operations</span>
+
+                <div class="workflow-step">
+                    <div class="workflow-icon">
+                        <i class="ti ti-building" aria-hidden="true"></i>
+                    </div>
+                    <div class="workflow-label">Project Team</div>
+                    <div class="workflow-desc">Field validation</div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-icon">
+                        <i class="ti ti-chart-line" aria-hidden="true"></i>
+                    </div>
+                    <div class="workflow-label">Planning Team</div>
+                    <div class="workflow-desc">Resource allocation</div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-icon">
+                        <i class="ti ti-cpu" aria-hidden="true"></i>
+                    </div>
+                    <div class="workflow-label">SD Team</div>
+                    <div class="workflow-desc">Technical validation</div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-icon">
+                        <i class="ti ti-check" aria-hidden="true"></i>
+                    </div>
+                    <div class="workflow-label">Final MEC Review</div>
+                    <div class="workflow-desc">Final approval</div>
                 </div>
             </div>
-            <!-- additional micro detail from the original: Software requests, automation ideas & feedback — all in one place. repeated elegantly -->
-            <div class="mt-6 pt-4 border-t border-slate-50 text-center text-slate-400 text-[10px] uppercase tracking-wider font-semibold flex flex-wrap justify-center gap-x-8 gap-y-2">
-                <span class="inline-flex items-center gap-1.5">Software requests</span>
-                <span class="inline-flex items-center gap-1.5">Automation ideas</span>
-                <span class="inline-flex items-center gap-1.5">Feedback & bugs</span>
-                <span class="inline-flex items-center gap-1.5">Real-time tracking</span>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Leadership</span>
+                <h2 class="section-title">System Architects</h2>
+                <p class="section-subtitle">The team behind FiberOne's internal infrastructure development.</p>
+            </div>
+
+            <div class="team-grid">
+                <div class="team-member">
+                    <span class="team-role">Head of Service Delivery</span>
+                    <h3 class="team-name">Ibrahim Salami</h3>
+                    <p class="team-bio">Oversees core service delivery pipelines, operational strategy, and system architecture parameters. Leads the vision for internal tool development and industry-wide scalability.</p>
+                </div>
+
+                <div class="team-member">
+                    <span class="team-role">SD Technology Support</span>
+                    <h3 class="team-name">Idris Adeleke</h3>
+                    <p class="team-bio">Responsible for core script development, infrastructure automation hooks, and technical feature scaling. Ensures our systems are robust, reliable, and ready for production.</p>
+                </div>
+
+                <div class="team-member">
+                    <span class="team-role">Infrastructure Systems Analyst</span>
+                    <h3 class="team-name">Love Adenirun</h3>
+                    <p class="team-bio">Specializes in system integration, performance optimization, and user experience enhancements. Focuses on making our tools intuitive and efficient for all teams.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Support</span>
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <p class="section-subtitle">Understanding the SD Request Portal and PAT Workflow.</p>
+            </div>
+
+            <div class="faq-container">
+                <div class="faq-item">
+                    <button class="faq-button" aria-expanded="false">
+                        <span>What exactly is Service Delivery (SD) in this context?</span>
+                        <span class="faq-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Service Delivery is the backbone of FiberOne operations. While we are known for external service through FST and Technology Support, SD is now expanding into internal Infrastructure Development -- building the software tools that empower our own teams to work more efficiently.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-button" aria-expanded="false">
+                        <span>So SD is now building software too?</span>
+                        <span class="faq-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Exactly. We've realized that to provide world-class service to customers, our internal systems must be just as world-class. The new Infrastructure branch is dedicated to "serving the server" -- creating apps and automations specifically for FiberOne staff.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-button" aria-expanded="false">
+                        <span>What is PAT and how does it work?</span>
+                        <span class="faq-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>PAT (Provisional Acceptability Test) is our structured workflow for validating infrastructure projects. It flows through MEC, Project Team, Planning Team, SD Team, and Final MEC Review. Each stage has specific responsibilities and checkpoints to ensure quality.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-button" aria-expanded="false">
+                        <span>How does this benefit the Field Service Technicians (FST)?</span>
+                        <span class="faq-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>By developing better internal tools, our FST and Technology Support teams can diagnose issues faster, access better data in the field, and reduce repetitive manual tasks, allowing them to focus on high-quality service delivery.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-button" aria-expanded="false">
+                        <span>Will SD still handle direct customer service?</span>
+                        <span class="faq-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes. Our commitment to external customers remains unchanged. This internal development system is an addition to our core mission, ensuring our internal infrastructure is as robust as the fiber network we deploy.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-button" aria-expanded="false">
+                        <span>What happens after I submit a request?</span>
+                        <span class="faq-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>All submissions are reviewed within 24 hours. High-priority requests are fast-tracked, while others are added to our development queue. You'll receive status updates via email, and can track progress through your dashboard.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-button" aria-expanded="false">
+                        <span>What are the PAT scoring rules?</span>
+                        <span class="faq-icon" aria-hidden="true"></span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Critical (CR) snags = 3 points each, Major (MJ) = 2 points, Minor (MN) = 1 point. Any CR snag or total score greater than or equal to 3 results in automatic PAT failure. End-to-end insertion loss must be within optical budget (FTTH/FTTB less than or equal to 28 dB).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-top">
+                    <div class="footer-logo">
+                        <img src="logo/img2.png" alt="FiberOne Brand Mark">
+                        <div class="footer-text">
+                            &copy; FiberOne Broadband &mdash; <strong>Internal Use Only</strong>
+                        </div>
+                    </div>
+                    <div class="footer-badge">
+                        <i class="ti ti-shield-check" aria-hidden="true"></i>
+                        <span>Powered by SD Operations</span>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <span>Software Requests</span>
+                    <span>Automation Ideas</span>
+                    <span>Feedback &amp; Bugs</span>
+                    <span>PAT Projects</span>
+                    <span>Real-Time Tracking</span>
+                    <span>Service Delivery</span>
+                </div>
             </div>
         </div>
     </footer>
 
-    <!-- Simple script for hover/demo interaction: dummy console note (non-intrusive) and ensures link placeholders keep UX -->
+    <!-- JavaScript -->
     <script>
-        (function() {
-            // Make all CTA links (sign in, submit etc) show a friendly demo toast to match portal interactive feel without breaking design
-            const ctaElements = document.querySelectorAll('a[href="#"]');
-            ctaElements.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    // optional subtle feedback: internal demo - only for demonstration but improves realism
-                    const fakeNotif = document.createElement('div');
-                    fakeNotif.innerText = 'Internal portal demo — Sign-in flow integrated with Microsoft SSO (simulated)';
-                    fakeNotif.style.position = 'fixed';
-                    fakeNotif.style.bottom = '24px';
-                    fakeNotif.style.left = '50%';
-                    fakeNotif.style.transform = 'translateX(-50%)';
-                    fakeNotif.style.backgroundColor = '#1E293B';
-                    fakeNotif.style.color = '#E2E8F0';
-                    fakeNotif.style.padding = '10px 24px';
-                    fakeNotif.style.borderRadius = '40px';
-                    fakeNotif.style.fontSize = '0.85rem';
-                    fakeNotif.style.fontWeight = '500';
-                    fakeNotif.style.zIndex = '9999';
-                    fakeNotif.style.backdropFilter = 'blur(10px)';
-                    fakeNotif.style.border = '1px solid #334155';
-                    fakeNotif.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.3)';
-                    fakeNotif.style.fontFamily = "'Inter', sans-serif";
-                    document.body.appendChild(fakeNotif);
-                    setTimeout(() => {
-                        fakeNotif.style.opacity = '0';
-                        setTimeout(() => fakeNotif.remove(), 400);
-                    }, 2800);
-                });
-            });
-            
-            // Also for card “submit request” / “suggest automation” / etc optional clicks
-            const cardActionSpans = document.querySelectorAll('main section .text-xs.font-bold');
-            cardActionSpans.forEach(el => {
-                el.style.cursor = 'pointer'; // Keep cursor pointer for interactivity
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const cardTitle = el.closest('div[class*="bg-white"]')?.querySelector('h3')?.innerText || 'item';
-                    const notifMsg = document.createElement('div');
-                    notifMsg.innerText = `[FORM] "${cardTitle}" request form — SD intake portal (demo)`;
-                    notifMsg.style.position = 'fixed';
-                    notifMsg.style.bottom = '24px';
-                    notifMsg.style.left = '50%';
-                    notifMsg.style.transform = 'translateX(-50%)';
-                    notifMsg.style.backgroundColor = '#0F172A';
-                    notifMsg.style.color = '#CBD5E1';
-                    notifMsg.style.padding = '8px 24px';
-                    notifMsg.style.borderRadius = '32px';
-                    notifMsg.style.fontSize = '0.8rem';
-                    notifMsg.style.zIndex = '9999';
-                    notifMsg.style.border = '1px solid #2D3A5E';
-                    notifMsg.style.fontFamily = "'Inter', sans-serif";
-                    notifMsg.style.backdropFilter = 'blur(8px)';
-                    document.body.appendChild(notifMsg);
-                    setTimeout(() => {
-                        notifMsg.style.opacity = '0';
-                        setTimeout(() => notifMsg.remove(), 350);
-                    }, 2300);
-                });
-            });
-        })();
-
-        // FAQ Accordion JavaScript
-        const faqItems = document.querySelectorAll(".faq-accordion-button");
-
-        function toggleAccordion() {
-            const itemToggle = this.getAttribute('aria-expanded');
-            
-            faqItems.forEach(item => {
-                item.setAttribute('aria-expanded', 'false');
-            });
-            
-            if (itemToggle === 'false') {
-                this.setAttribute('aria-expanded', 'true');
-            }
-        }
-        faqItems.forEach(item => item.addEventListener('click', toggleAccordion));
-
-        // Typewriter effect for the new section header
-        document.addEventListener('DOMContentLoaded', () => {
-            const header = document.getElementById('typewriter-header');
-            const p1 = document.getElementById('reveal-p1');
-            const p2 = document.getElementById('reveal-p2');
-            const headerText = "What We’ve Built & Where We're Going";
-            
-            let i = 0;
-            const speed = 40;
-
-            function typeWriter() {
-                if (header) {
-                    if (i < headerText.length) {
-                        header.innerHTML += headerText.charAt(i);
-                        i++;
-                        setTimeout(typeWriter, speed);
-                    } else {
-                        // Finish header: stop blinking and reveal text
-                        header.style.borderRight = "none";
-                        setTimeout(() => p1.classList.add('visible'), 200);
-                        setTimeout(() => p2.classList.add('visible'), 500);
-                    }
-                }
-            }
-
-            // Use Intersection Observer to trigger when visible
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        typeWriter();
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.5 });
-
-            if (header) {
-                observer.observe(header);
+        // Header scroll effect
+        const header = document.getElementById('main-header');
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 20) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
             }
         });
 
+        // FAQ Accordion
+        document.addEventListener('DOMContentLoaded', function() {
+            const faqButtons = document.querySelectorAll('.faq-button');
+
+            faqButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const isActive = this.classList.contains('active');
+                    const wasExpanded = this.getAttribute('aria-expanded') === 'true';
+
+                    // Close all other FAQ items
+                    faqButtons.forEach(function(btn) {
+                        if (btn !== button) {
+                            btn.classList.remove('active');
+                            btn.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+
+                    // Toggle current item
+                    if (!isActive) {
+                        this.classList.add('active');
+                        this.setAttribute('aria-expanded', 'true');
+                    } else {
+                        this.classList.remove('active');
+                        this.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            });
+
+            // Card action click handlers
+            var cardActions = document.querySelectorAll('.card-action');
+            cardActions.forEach(function(action) {
+                action.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var card = this.closest('.card');
+                    var title = card.querySelector('.card-title').textContent;
+                    sessionStorage.setItem('pendingRequestType', title);
+                });
+            });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
     </script>
-    <!-- ensure no external broken images; all logo links point to exact given URLs;
-         Header logo: WHITE cropped version, footer logo: FB_logo-scaled, favicon: fiberone-logo1.png.
-         Perfect professional internal portal matching the original design and descriptions. -->
 </body>
 </html>

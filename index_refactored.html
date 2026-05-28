@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>FiberOne Internal Portal | SD Request Hub</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo/img2.png">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ============================================
+           PROFESSIONAL DESIGN SYSTEM
+           ============================================ */
+        
+        /* CSS Custom Properties for Design Tokens */
+        :root {
+            --font-primary: 'Inter', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+            
+            /* Sophisticated Color Palette */
+            --color-primary-900: #0f172a;    /* Deep charcoal */
+            --color-primary-800: #1e293b;    /* Slate */
+            --color-primary-700: #334155;    /* Muted charcoal */
+            --color-primary-600: #475569;    /* Dark slate */
+            --color-primary-500: #64748b;    /* Medium slate */
+            --color-primary-400: #94a3b8;    /* Light slate */
+            --color-primary-300: #cbd5e1;    /* Pale slate */
+            --color-primary-200: #e2e8f0;    /* Very light slate */
+            --color-primary-100: #f1f5f9;    /* Off-white */
+            --color-primary-50: #f8fafc;     /* Clean white */
+            
+            /* Accent Colors - Sophisticated Indigo */
+            --color-accent-900: #312e81;
+            --color-accent-800: #3730a3;
+            --color-accent-700: #4338ca;
+            --color-accent-600: #4f46e5;
+            --color-accent-500: #6366f1;
+            --color-accent-400: #818cf8;
+            --color-accent-300: #a5b4fc;
+            --color-accent-200: #c7d2fe;
+            --color-accent-100: #e0e7ff;
+            
+            /* Status Colors */
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            --color-info: #3b82f6;
+            
+            /* Typography */
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            --font-size-3xl: 1.875rem;
+            --font-size-4xl: 2.25rem;
+            --font-size-5xl: 3rem;
+            --font-size-6xl: 3.75rem;
+            --font-size-7xl: 4.5rem;
+            
+            /* Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+            --spacing-3xl: 4rem;
+            
+            /* Border Radius */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.375rem;
+            --radius-lg: 0.5rem;
+            --radius-xl: 0.75rem;
+            --radius-2xl: 1rem;
+            --radius-3xl: 1.5rem;
+            --radius-full: 9999px;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+            
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-base: 200ms ease;
+            --transition-slow: 300ms ease;
+            --transition-slower: 500ms ease;
+            
+            /* Z-Index Scale */
+            --z-dropdown: 100;
+            --z-sticky: 200;
+            --z-fixed: 300;
+            --z-modal-backdrop: 400;
+            --z-modal: 500;
+            --z-popover: 600;
+            --z-tooltip: 700;
+        }
+        
+        /* ============================================
+           BASE STYLES
+           ============================================ */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-primary);
+            font-size: var(--font-size-base);
+            line-height: 1.6;
+            color: var(--color-primary-700);
+            background-color: var(--color-primary-50);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            scroll-behavior: smooth;
+        }
+        
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--color-primary-900);
+            letter-spacing: -0.02em;
+        }
+        
+        h1 { font-size: var(--font-size-5xl); }
+        h2 { font-size: var(--font-size-4xl); }
+        h3 { font-size: var(--font-size-3xl); }
+        h4 { font-size: var(--font-size-2xl); }
+        h5 { font-size: var(--font-size-xl); }
+        h6 { font-size: var(--font-size-lg); }
+        
+        p {
+            color: var(--color-primary-600);
+            line-height: 1.7;
+        }
+        
+        a {
+            color: var(--color-accent-600);
+            text-decoration: none;
+            transition: color var(--transition-base);
+        }
+        
+        a:hover {
+            color: var(--color-accent-700);
+        }
+        
+        /* ============================================
+           LAYOUT UTILITIES
+           ============================================ */
+        
+        .container-pro {
+            width: 100%;
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: var(--spacing-md);
+            padding-right: var(--spacing-md);
+        }
+        
+        @media (min-width: 640px) {
+            .container-pro {
+                padding-left: var(--spacing-xl);
+                padding-right: var(--spacing-xl);
+            }
+        }
+        
+        /* ============================================
+           COMPONENT STYLES
+           ============================================ */
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-md) var(--spacing-xl);
+            font-weight: 600;
+            border-radius: var(--radius-full);
+            transition: all var(--transition-base);
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--color-accent-600);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--color-accent-700);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-secondary {
+            background-color: var(--color-primary-100);
+            color: var(--color-primary-900);
+            border: 1px solid var(--color-primary-200);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--color-primary-200);
+            border-color: var(--color-primary-300);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--color-primary-900);
+            border: 1px solid var(--color-primary-300);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--color-primary-50);
+            border-color: var(--color-primary-400);
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: var(--radius-2xl);
+            border: 1px solid var(--color-primary-200);
+            padding: var(--spacing-xl);
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .card:hover {
+            border-color: var(--color-accent-300);
+            box-shadow: var(--shadow-soft);
+        }
+        
+        /* Form Elements */
+        input, textarea, select {
+            font-family: inherit;
+            font-size: inherit;
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-primary-300);
+            border-radius: var(--radius-lg);
+            background-color: white;
+            color: var(--color-primary-900);
+            transition: border-color var(--transition-base), box-shadow var(--transition-base);
+            width: 100%;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--color-accent-500);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        /* ============================================
+           SECTION-SPECIFIC STYLES
+           ============================================ */
+        
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-800) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Feature Cards Grid */
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-xl);
+        }
+        
+        .feature-card {
+            background: white;
+            border: 1px solid var(--color-primary-200);
+            border-radius: var(--radius-2xl);
+            padding: var(--spacing-2xl);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-accent-500), var(--color-accent-400));
+            transform: scaleX(0);
+            transition: transform var(--transition-base);
+        }
+        
+        .feature-card:hover {
+            border-color: var(--color-accent-200);
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .feature-card-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-xl);
+            background: linear-gradient(135deg, var(--color-accent-100), var(--color-accent-50));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-lg);
+            transition: all var(--transition-base);
+        }
+        
+        .feature-card:hover .feature-card-icon {
+            background: linear-gradient(135deg, var(--color-accent-200), var(--color-accent-100));
+            transform: translateY(-2px);
+        }
+        
+        .feature-card-icon svg {
+            width: 28px;
+            height: 28px;
+            stroke: var(--color-accent-600);
+        }
+        
+        /* CTA Button in Cards */
+        .card-cta {
+            width: 100%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--color-primary-100);
+            color: var(--color-primary-900);
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            margin-top: auto;
+        }
+        
+        .card-cta:hover {
+            background: var(--color-accent-600);
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        /* Structural Divider */
+        .divider {
+            position: relative;
+            text-align: center;
+            padding: var(--spacing-xl) 0;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--color-primary-200);
+            z-index: 0;
+        }
+        
+        .divider-text {
+            position: relative;
+            z-index: 10;
+            background: var(--color-primary-50);
+            padding: var(--spacing-xs) var(--spacing-lg);
+            font-size: var(--font-size-xs);
+            font-family: var(--font-primary);
+            font-weight: 600;
+            color: var(--color-primary-500);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        
+        /* Typewriter Effect */
+        .typewriter {
+            display: inline;
+            border-right: 2px solid var(--color-accent-600);
+            animation: blink 0.7s step-end infinite;
+        }
+        
+        @keyframes blink {
+            from, to { border-color: transparent; }
+            50% { border-color: var(--color-accent-600); }
+        }
+        
+        /* Text Reveal Animation */
+        .reveal-text {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), 
+                        transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .reveal-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Team Member Cards */
+        .team-card {
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-lg);
+            border: none;
+            background: transparent;
+        }
+        
+        .team-role {
+            font-size: var(--font-size-xs);
+            font-weight: 700;
+            color: var(--color-accent-600);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .team-name {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--color-primary-900);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .team-description {
+            font-size: var(--font-size-sm);
+            color: var(--color-primary-600);
+            line-height: 1.6;
+        }
+        
+        /* FAQ Accordion */
+        .faq-container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid var(--color-primary-200);
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .faq-button {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: var(--spacing-lg) 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-primary);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--color-primary-800);
+            transition: color var(--transition-base);
+        }
+        
+        .faq-button:hover {
+            color: var(--color-accent-600);
+        }
+        
+        .faq-button[aria-expanded="true"] {
+            color: var(--color-accent-600);
+        }
+        
+        .faq-title {
+            flex-grow: 1;
+            padding-right: var(--spacing-xl);
+            text-align: left;
+        }
+        
+        .faq-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--color-primary-300);
+            border-radius: var(--radius-full);
+            transition: all var(--transition-base);
+            flex-shrink: 0;
+        }
+        
+        .faq-button:hover .faq-icon,
+        .faq-button[aria-expanded="true"] .faq-icon {
+            border-color: var(--color-accent-400);
+            background: var(--color-accent-50);
+        }
+        
+        .faq-icon::before,
+        .faq-icon::after {
+            content: '';
+            position: absolute;
+            background: currentColor;
+            transition: transform var(--transition-base);
+        }
+        
+        .faq-icon::before {
+            width: 12px;
+            height: 2px;
+        }
+        
+        .faq-icon::after {
+            width: 2px;
+            height: 12px;
+        }
+        
+        .faq-button[aria-expanded="true"] .faq-icon::after {
+            transform: scaleY(0);
+        }
+        
+        .faq-content {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height var(--transition-slow), opacity var(--transition-slow);
+            padding: 0 var(--spacing-md);
+        }
+        
+        .faq-button[aria-expanded="true"] + .faq-content {
+            max-height: 500px;
+            opacity: 1;
+            padding: 0 var(--spacing-md) var(--spacing-xl);
+        }
+        
+        .faq-answer {
+            font-size: var(--font-size-base);
+            color: var(--color-primary-600);
+            line-height: 1.7;
+        }
+        
+        /* Background Patterns */
+        .blueprint-bg {
+            background-color: var(--color-primary-50);
+            background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%234f46e5' stroke-width='0.4' stroke-opacity='0.03'%3E%3Cpath d='M0 120L120 0M0 0l120 120M60 0v120M0 60h120'/%3E%3Ccircle cx='60' cy='60' r='1' fill='%234f46e5' fill-opacity='0.04'/%3E%3Ccircle cx='0' cy='0' r='0.5' fill='%234f46e5' fill-opacity='0.04'/%3E%3Ccircle cx='120' cy='120' r='0.5' fill='%234f46e5' fill-opacity='0.04'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        .logic-flow-bg {
+            background-color: white;
+            background-image: url("data:image/svg+xml,%3Csvg width='150' height='150' viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%234f46e5' stroke-width='0.3' stroke-opacity='0.04'%3E%3Ccircle cx='20' cy='20' r='2' /%3E%3Cpath d='M24 20h20' /%3E%3Crect x='44' y='15' width='16' height='10' rx='1' /%3E%3Cpath d='M60 20h20' /%3E%3Ccircle cx='80' cy='20' r='2' /%3E%3Cpath d='M80 24v20' /%3E%3Cpath d='M20 24v72' /%3E%3Cpath d='M20 100h60' /%3E%3Ccircle cx='80' cy='100' r='2' /%3E%3Cpath d='M80 96v-20' /%3E%3Crect x='72' y='64' width='16' height='10' rx='1' /%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--color-primary-200);
+            position: sticky;
+            top: 0;
+            z-index: var(--z-sticky);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--color-primary-50);
+            border-top: 1px solid var(--color-primary-200);
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+        
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: var(--font-size-4xl); }
+            h2 { font-size: var(--font-size-3xl); }
+            h3 { font-size: var(--font-size-2xl); }
+            
+            .feature-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Focus States */
+        :focus-visible {
+            outline: 2px solid var(--color-accent-500);
+            outline-offset: 2px;
+        }
+        
+        /* Selection */
+        ::selection {
+            background: var(--color-accent-200);
+            color: var(--color-primary-900);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- ========== HEADER ========== -->
+    <header class="header">
+        <div class="container-pro py-4 flex flex-wrap items-center justify-between gap-4">
+            <!-- Left: Branding -->
+            <div class="flex items-center gap-4">
+                <img src="logo/img1.png" 
+                     alt="FiberOne Broadband Logo" 
+                     class="h-9 w-auto md:h-10 object-contain">
+                <div class="hidden sm:block h-6 w-px bg-primary-200"></div>
+                <span class="text-slate-500 font-light tracking-[0.18em] text-[11px] sm:text-[13.5px] uppercase hidden sm:inline-block">
+                    SD Infrastructure <span class="font-bold text-slate-900">Development System</span>
+                </span>
+            </div>
+            
+            <!-- Right: Navigation -->
+            <a href="auth.html" class="btn btn-secondary">
+                <span>Sign in</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="flex flex-col overflow-x-hidden">
+        
+        <!-- Hero Section -->
+        <section class="hero-section min-h-[75vh] flex flex-col items-center justify-center pt-20 pb-24">
+            <div class="hero-grid-overlay"></div>
+            
+            <div class="container-pro text-center max-w-5xl mx-auto hero-content animate-fade-in-up" style="font-family: 'Inter', sans-serif;">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.15] mb-6">
+                    Software requests, automation ideas & feedback all in one place.
+                </h1>
+                
+                <p class="text-slate-300 text-lg md:text-xl max-w-3xl font-light tracking-wide mb-10">
+                    Tell SD what you need. Track what's being built. Make your work easier.
+                </p>
+                
+                <!-- Primary CTA Button -->
+                <a href="auth.html" class="btn btn-primary group shadow-xl">
+                    <svg class="w-5 h-5 mr-3" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M0 0H11V11H0V0Z" fill="#F25022"/>
+                        <path d="M12 0H23V11H12V0Z" fill="#7FBA00"/>
+                        <path d="M0 12H11V23H0V12Z" fill="#00A4EF"/>
+                        <path d="M12 12H23V23H12V12Z" fill="#FFB900"/>
+                    </svg>
+                    <span>Sign in with Microsoft</span>
+                    <svg class="w-5 h-5 transition-transform group-hover:translate-x-1 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </a>
+            </div>
+            
+            <!-- Bottom Gradient Fade -->
+            <div class="absolute bottom-0 left-0 w-full h-20 md:h-28 bg-gradient-to-t from-white via-white/10 to-transparent pointer-events-none"></div>
+        </section>
+
+        <!-- What can you submit? Section -->
+        <section class="blueprint-bg py-16 md:py-24">
+            <div class="container-pro">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">What can you submit?</h2>
+                    <p class="text-slate-500 text-lg md:text-xl mt-4">Anything that would make your team's day-to-day easier.</p>
+                </div>
+
+                <!-- Feature Cards Grid -->
+                <div class="feature-cards">
+                    <!-- Software requests card -->
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-3">Software requests</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-8">
+                            Need a new tool or app? Tell us what would help.
+                        </p>
+                        <div class="card-cta">
+                            submit request
+                        </div>
+                    </div>
+
+                    <!-- Automation ideas card -->
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-3">Automation ideas</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-8">
+                            A repetitive task that should be automated? Pitch it.
+                        </p>
+                        <div class="card-cta">
+                            suggest automation
+                        </div>
+                    </div>
+
+                    <!-- Feedback card -->
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-3">Feedback</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-8">
+                            Something about an existing tool that bugs you? Share it.
+                        </p>
+                        <div class="card-cta">
+                            give feedback
+                        </div>
+                    </div>
+
+                    <!-- Bug reports card -->
+                    <div class="feature-card">
+                        <div class="feature-card-icon">
+                            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-3">Bug reports</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-8">
+                            Spot something broken? File it and we'll triage.
+                        </p>
+                        <div class="card-cta">
+                            report issue
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Structural Divider -->
+        <div class="divider">
+            <span class="divider-text">DEV // BY SERVICE DELIVERY</span>
+        </div>
+
+        <!-- Active Systems & Vision Section -->
+        <section class="logic-flow-bg py-16 md:py-28">
+            <div class="container-pro grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <!-- Left Column: Heading -->
+                <div class="lg:col-span-5 text-center lg:text-left">
+                    <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900 typewriter" id="typewriter-header"></h2>
+                </div>
+
+                <!-- Right Column: Content -->
+                <div class="lg:col-span-7 text-center lg:text-left space-y-6">
+                    <p id="reveal-p1" class="reveal-text text-lg text-slate-600 leading-relaxed font-light">
+                        Standard corporate software makes daily work feel like a chore. We want our teams to love what they do, so we built these systems to clear out the annoying manual bottlenecks and make everyday work <span class="text-indigo-600 font-semibold">smooth, fast, and actually pleasant</span>.
+                    </p>
+                    <p id="reveal-p2" class="reveal-text text-lg text-slate-600 leading-relaxed font-light">
+                        Right now, these tools are making our internal operations run like a machine. But the bigger picture is much larger. We aren't just building this for ourselves. We are architecting it so that down the line, <span class="text-indigo-600 font-semibold">other infrastructure companies can plug into it too</span>. We are turning our internal solutions into an engine for the <span class="text-indigo-600 font-semibold">entire industry</span>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- System Architects Section -->
+        <section class="bg-white py-20 md:py-28">
+            <div class="container-pro">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+                    <!-- Ibrahim Salami -->
+                    <div class="team-card">
+                        <span class="team-role">Head of Service Delivery</span>
+                        <h3 class="team-name">Ibrahim Salami</h3>
+                        <p class="team-description">Oversees core service delivery pipelines, operational strategy, and system architecture parameters.</p>
+                    </div>
+
+                    <!-- Idris Adeleke -->
+                    <div class="team-card">
+                        <span class="team-role">SD Technology Support</span>
+                        <h3 class="team-name">Idris Adeleke</h3>
+                        <p class="team-description">Responsible for core script development, infrastructure automation hooks, and technical feature scaling.</p>
+                    </div>
+
+                    <!-- Love Adenirun -->
+                    <div class="team-card">
+                        <span class="team-role">Infrastructure Systems Analyst</span>
+                        <h3 class="team-name">Love Adenirun</h3>
+                        <p class="team-description">Infrastructure systems analysis and internal tool optimization for operational efficiency.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="bg-white py-16 md:py-24">
+            <div class="container-pro">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Frequently Asked Questions</h2>
+                    <p class="text-slate-500 text-lg md:text-xl mt-4">Understanding the shift to Internal Infrastructure Development.</p>
+                </div>
+
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <button id="accordion-button-1" aria-expanded="false" class="faq-button">
+                            <span class="faq-title">What exactly is Service Delivery (SD) in this context?</span>
+                            <span class="faq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="faq-content">
+                            <p class="faq-answer">Service Delivery is the backbone of FiberOne operations. While we are known for external service through FST and Technology Support, SD is now expanding into internal Infrastructure Development—building the software tools that empower our own teams.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button id="accordion-button-2" aria-expanded="false" class="faq-button">
+                            <span class="faq-title">Wait, so SD is now building software too?</span>
+                            <span class="faq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="faq-content">
+                            <p class="faq-answer">Exactly. We've realized that to provide world-class service to customers, our internal systems must be just as world-class. The new Infrastructure branch is dedicated to "serving the server"—creating apps and automations specifically for FiberOne staff.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button id="accordion-button-3" aria-expanded="false" class="faq-button">
+                            <span class="faq-title">How does this benefit the Field Service Technicians (FST)?</span>
+                            <span class="faq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="faq-content">
+                            <p class="faq-answer">By developing better internal tools, our FST and Technology Support teams can diagnose issues faster, access better data in the field, and reduce repetitive manual tasks, allowing them to focus on high-quality service.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button id="accordion-button-4" aria-expanded="false" class="faq-button">
+                            <span class="faq-title">Will SD still handle direct customer service?</span>
+                            <span class="faq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="faq-content">
+                            <p class="faq-answer">Yes. Our commitment to external customers remains unchanged. This internal development system is an addition to our core mission, ensuring our internal infrastructure is as robust as the fiber network we deploy.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button id="accordion-button-5" aria-expanded="false" class="faq-button">
+                            <span class="faq-title">How will SD accomplish these new development goals?</span>
+                            <span class="faq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="faq-content">
+                            <p class="faq-answer">We utilize modern DevOps practices and agile workflows. By listening to the feedback submitted through this portal, we prioritize tools that offer the highest impact for the most departments, from FST to Support.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="footer">
+        <div class="container-pro py-8 md:py-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <!-- Left: Branding -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <img src="logo/img2.png" alt="FiberOne Brand Mark"
+                        class="h-8 w-auto opacity-80 hover:opacity-100 transition-opacity">
+                    <div class="hidden sm:block h-6 w-px bg-slate-200"></div>
+                    <div class="text-slate-500 text-sm">
+                        &copy; Fiber One Broadband — <span class="text-slate-900 font-bold">Internal use only</span>
+                    </div>
+                </div>
+                
+                <!-- Right: Powered by -->
+                <div class="flex items-center gap-3 text-slate-500 text-xs bg-slate-50 px-4 py-2 rounded-full border border-slate-100 font-medium">
+                    <span>Powered by SD Operations</span>
+                </div>
+            </div>
+            
+            <!-- Feature Tags -->
+            <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+                <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                    <span>Software requests</span>
+                    <span>Automation ideas</span>
+                    <span>Feedback & bugs</span>
+                    <span>Real-time tracking</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========== SCRIPTS ========== -->
+    <script>
+        // FAQ Accordion
+        const faqButtons = document.querySelectorAll(".faq-button");
+        
+        faqButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const isExpanded = button.getAttribute('aria-expanded') === 'true';
+                
+                // Close all other accordions
+                faqButtons.forEach(btn => {
+                    if (btn !== button) {
+                        btn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                
+                // Toggle current accordion
+                button.setAttribute('aria-expanded', !isExpanded);
+            });
+        });
+        
+        // Typewriter Effect
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.getElementById('typewriter-header');
+            const p1 = document.getElementById('reveal-p1');
+            const p2 = document.getElementById('reveal-p2');
+            const headerText = "What We've Built & Where We're Going";
+            
+            if (!header) return;
+            
+            let i = 0;
+            const speed = 40;
+            
+            function typeWriter() {
+                if (i < headerText.length) {
+                    header.innerHTML += headerText.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, speed);
+                } else {
+                    // Complete: stop blinking and reveal content
+                    header.style.borderRight = "none";
+                    if (p1) setTimeout(() => p1.classList.add('visible'), 200);
+                    if (p2) setTimeout(() => p2.classList.add('visible'), 500);
+                }
+            }
+            
+            // Use Intersection Observer to trigger when visible
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        typeWriter();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            observer.observe(header);
+        });
+        
+        // Interactive Element Feedback
+        (function() {
+            // CTA Links
+            const ctaElements = document.querySelectorAll('a[href="#"], .card-cta');
+            ctaElements.forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const text = el.textContent?.trim() || 'Action';
+                    showNotification(`Demo: "${text}" form — SD intake portal`);
+                });
+            });
+            
+            function showNotification(message) {
+                const notif = document.createElement('div');
+                notif.textContent = message;
+                notif.style.cssText = `
+                    position: fixed;
+                    bottom: 24px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #1E293B;
+                    color: #E2E8F0;
+                    padding: 12px 24px;
+                    border-radius: 40px;
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                    z-index: 9999;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid #334155;
+                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+                    font-family: 'Inter', sans-serif;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                `;
+                document.body.appendChild(notif);
+                
+                // Trigger reflow
+                setTimeout(() => notif.style.opacity = '1', 10);
+                
+                // Remove after delay
+                setTimeout(() => {
+                    notif.style.opacity = '0';
+                    setTimeout(() => notif.remove(), 400);
+                }, 2800);
+            }
+        })();
+    </script>
+</body>
+</html>

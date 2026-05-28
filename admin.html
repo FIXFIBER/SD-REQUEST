@@ -6,7 +6,6 @@
     <title>Admin Overview | FiberOne</title>
     <link rel="icon" type="image/png" href="logo/img2.png">
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
     
@@ -80,7 +79,11 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 /* Tables */
 .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 .data-table th { text-align: left; padding: 12px 16px; border-bottom: 1px solid #e2e4e9; font-size: 11px; text-transform: uppercase; color: #8a90a0; font-weight: 600; letter-spacing: 0.05em; }
-.data-table td { padding: 14px 16px; border-bottom: 0.5px solid #f0f1f5; font-size: 13.5px; color: #2d3656; }
+.data-table td { padding: 12px 16px; border-bottom: 0.5px solid #f0f1f5; font-size: 13px; color: #2d3656; }
+.data-table tr { cursor: pointer; transition: background-color 0.2s; }
+.data-table tr:hover { background-color: #f8fafc; }
+.data-table compact td { padding: 8px 12px; font-size: 12px; }
+.data-table compact th { padding: 8px 12px; }
 .status-pill { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
 .btn-primary { background: #1a3faa; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
 .filter-select { padding: 7px 12px; border: 0.5px solid #e2e4e9; border-radius: 8px; font-size: 13px; color: #4a5568; outline: none; background: #fff; }
@@ -191,6 +194,9 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
       <div class="tab" data-target="pat-projects">
         <i class="ti ti-clipboard-check"></i> PAT Projects
       </div>
+      <div class="tab" data-target="idris-dashboard" id="idris-dashboard-tab" style="display:none;">
+        <i class="ti ti-dashboard"></i> Idris Dashboard
+      </div>
       <div class="tab" data-target="settings" style="display:none;"><i class="ti ti-settings"></i> Settings</div>
     </div>
 
@@ -210,7 +216,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             <div id="ai-side-panel" style="display:none; flex: 2.2; background: #fff; border: 0.5px solid #e2e4e9; border-radius: 12px; flex-direction: column; overflow: hidden; height: 80vh; position: sticky; top: 0;">
                 <div style="background:#0d1526; color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center;">
                     <span style="font-weight:700; font-size:14px;">AI PAT Workspace</span>
-                    <button onclick="closeAISidePanel()" style="background:rgba(255,255,255,.1); border:none; color:#fff; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size: 16px;">✕</button>
+                    <button onclick="closeAISidePanel()" style="background:rgba(255,255,255,.1); border:none; color:#fff; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size: 16px;" aria-label="Close">X</button>
                 </div>
                 <div id="ai-side-panel-content" style="padding:0; overflow-y:auto; flex:1;"></div>
             </div>
@@ -259,25 +265,149 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input id="pat-search" class="form-input" style="width:240px;padding:7px 12px"
               placeholder="Search project name, address, ID..." oninput="filterPATProjects()">
-            <button class="btn-primary" onclick="openPATForm()">
+            <select id="pat-status-filter" class="filter-select" onchange="filterPATProjects()">
+              <option value="">All Statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Awaiting Project Team">Awaiting Project Team</option>
+              <option value="Awaiting Planning Team">Awaiting Planning Team</option>
+              <option value="Awaiting Service Delivery">Awaiting Service Delivery</option>
+              <option value="Awaiting Final MEC Review">Awaiting Final MEC</option>
+              <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <button class="btn-primary" onclick="openPATForm()" id="new-pat-btn">
               <i class="ti ti-plus"></i> New PAT
+            </button>
+            <button class="btn-primary" onclick="forceRefreshPATProjects()" style="background:#166534" title="Refresh from Sheet">
+              <i class="ti ti-refresh"></i> Refresh
             </button>
           </div>
         </div>
-        <table class="data-table" id="pat-table">
+        <div style="overflow-x:auto;">
+        <table class="data-table compact" id="pat-table">
           <thead>
             <tr>
-              <th>Project ID</th><th>Project Name</th><th>Address</th>
-              <th>Phase</th><th>Vendor</th><th>Date</th>
-              <th>By</th><th>Score</th><th>Verdict</th><th>Action</th>
+              <th style="width:80px;">ID</th>
+              <th>Project Name</th>
+              <th>Location</th>
+              <th style="width:140px;">Status</th>
+              <th style="width:120px;">Assigned</th>
+              <th style="width:100px;">Vendor</th>
+              <th style="width:80px;">Date</th>
+              <th style="width:60px;">Score</th>
+              <th style="width:80px;">Actions</th>
             </tr>
           </thead>
           <tbody id="pat-list">
-            <tr><td colspan="10" style="text-align:center;padding:40px;color:#8a90a0">
+            <tr><td colspan="9" style="text-align:center;padding:40px;color:#8a90a0">
               Loading projects...
             </td></tr>
           </tbody>
         </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Idris Dashboard Tab Content -->
+    <div id="idris-dashboard" class="tab-content">
+      <div class="section-card">
+        <div style="background:#0d1526;color:#fff;padding:20px;border-radius:12px;margin-bottom:20px">
+          <h2 style="margin:0;font-size:24px;font-weight:700">Welcome Idris Adeleke</h2>
+          <p style="margin:10px 0 0 0;opacity:0.9;font-size:14px">Comprehensive PAT Analytics & Workflow Tracking Dashboard</p>
+        </div>
+        
+        <!-- Dashboard Stats Grid -->
+        <div class="stats-grid" id="idris-stats-grid" style="margin-bottom:20px">
+          <div class="stat-card">
+            <div class="stat-icon-wrap blue"><i class="ti ti-file-text"></i></div>
+            <div class="stat-num" id="idris-total-pat">0</div>
+            <div class="stat-label">Total PAT Projects</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap green"><i class="ti ti-check"></i></div>
+            <div class="stat-num" id="idris-completed">0</div>
+            <div class="stat-label">Completed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap amber"><i class="ti ti-clock"></i></div>
+            <div class="stat-num" id="idris-pending">0</div>
+            <div class="stat-label">In Progress</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap" style="background:#fee2e2;color:#991b1b"><i class="ti ti-x"></i></div>
+            <div class="stat-num" id="idris-rejected">0</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+        </div>
+        
+        <!-- Workflow Efficiency Stats -->
+        <div style="background:#f8fafc;border:0.5px solid #e2e4e9;border-radius:12px;padding:20px;margin-bottom:20px">
+          <h3 style="font-size:15px;font-weight:600;color:#0d1526;margin-bottom:16px">Workflow Efficiency</h3>
+          <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);gap:14px">
+            <div class="stat-card" style="background:#fff;border:none">
+              <div class="stat-icon-wrap green"><i class="ti ti-trending-up"></i></div>
+              <div class="stat-num" id="idris-completion-rate">0%</div>
+              <div class="stat-label">Completion Rate</div>
+            </div>
+            <div class="stat-card" style="background:#fff;border:none">
+              <div class="stat-icon-wrap amber"><i class="ti ti-clock"></i></div>
+              <div class="stat-num" id="idris-avg-time">N/A</div>
+              <div class="stat-label">Avg Completion Time</div>
+            </div>
+            <div class="stat-card" style="background:#fff;border:none">
+              <div class="stat-icon-wrap" style="background:#fee2e2;color:#991b1b"><i class="ti ti-alert-circle"></i></div>
+              <div class="stat-num" id="idris-rejection-rate">0%</div>
+              <div class="stat-label">Rejection Rate</div>
+            </div>
+          </div>
+        </div>
+        
+
+
+        <!-- All PAT Projects Table with Full Details -->
+        <div style="background:#fff;border:0.5px solid #e2e4e9;border-radius:12px;padding:22px 24px;margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+            <div class="section-title" style="margin-bottom:0">All PAT Projects - Full Tracking</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="idris-pat-search" class="form-input" style="width:240px;padding:7px 12px" placeholder="Search projects..." oninput="filterIdrisPATs()">
+              <button class="btn-primary" onclick="loadIdrisDashboard(true)" style="background:#166534" title="Refresh Data">
+                <i class="ti ti-refresh"></i> Refresh
+              </button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table compact" id="idris-pat-table">
+              <thead>
+                <tr>
+                  <th style="width:80px;">ID</th>
+                  <th>Project Name</th>
+                  <th>Location</th>
+                  <th style="width:160px;">Status</th>
+                  <th style="width:120px;">Current Dept</th>
+                  <th style="width:120px;">Submitted By</th>
+                  <th style="width:100px;">Date</th>
+                  <th style="width:80px;">Score</th>
+                  <th style="width:120px;">Path</th>
+                  <th style="width:100px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="idris-pat-list">
+                <tr><td colspan="10" style="text-align:center;padding:40px;color:#8a90a0">Loading PAT analytics...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Project Path Timeline Modal -->
+        <div id="idris-path-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2001;align-items:center;justify-content:center">
+          <div style="background:#fff;max-width:800px;width:90%;max-height:80vh;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+            <div style="background:#0d1526;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+              <div style="font-weight:700">Project Workflow Path</div>
+              <button onclick="closeIdrisPathModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px" aria-label="Close">X</button>
+            </div>
+            <div style="padding:20px;overflow-y:auto;flex:1" id="idris-path-content"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -303,16 +433,64 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         </div>
     </div>
 
+    <!-- Workflow Assignment Modal -->
+    <div id="assign-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2001;align-items:center;justify-content:center">
+      <div style="background:#fff;max-width:500px;width:90%;border-radius:16px;overflow:hidden">
+        <div style="background:#0d1526;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Assign to Next Department</div>
+          <button onclick="closeAssignModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px" aria-label="Close">X</button>
+        </div>
+        <div style="padding:20px">
+          <div id="assign-modal-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workflow History Modal -->
+    <div id="history-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2001;align-items:center;justify-content:center">
+      <div style="background:#fff;max-width:600px;width:90%;border-radius:16px;overflow:hidden;max-height:80vh;overflow-y:auto">
+        <div style="background:#0d1526;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Workflow History</div>
+          <button onclick="closeHistoryModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px" aria-label="Close">X</button>
+        </div>
+        <div style="padding:20px" id="history-modal-content"></div>
+      </div>
+    </div>
+
+    <!-- Project Quick View Modal -->
+    <div id="project-quick-view" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2001;align-items:center;justify-content:center">
+      <div style="background:#fff;max-width:1000px;width:90%;max-height:85vh;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="background:#0d1526;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Project Details</div>
+          <button onclick="closeProjectQuickView()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px" aria-label="Close">X</button>
+        </div>
+        <div style="padding:20px;overflow-y:auto;flex:1" id="project-quick-view-content"></div>
+      </div>
+    </div>
+
     <div id="pat-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;overflow-y:auto;padding:20px">
       <div style="background:#fff;max-width:900px;margin:0 auto;border-radius:16px;overflow:hidden">
         <div style="background:#0d1526;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.6">MEC Department</div>
-            <div style="font-size:18px;font-weight:700">New PAT Project</div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.6" id="pat-modal-dept">MEC Department</div>
+            <div style="font-size:18px;font-weight:700" id="pat-modal-title">New PAT Project</div>
           </div>
-          <button onclick="closePATModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px">✕</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="showHistoryModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px" title="View Workflow History">
+              <i class="ti ti-history"></i> History
+            </button>
+            <button onclick="closePATModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px" aria-label="Close">X</button>
+          </div>
         </div>
         <div style="padding:24px" id="pat-form-body">
+          <!-- Workflow Status Bar -->
+          <div id="workflow-status-bar" style="margin-bottom:16px;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e4e9;display:none">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <strong style="color:#0d1526;font-size:13px">Workflow Status:</strong>
+              <span id="current-workflow-status" style="padding:4px 10px;background:#0d1526;color:#fff;border-radius:4px;font-size:12px;font-weight:600"></span>
+              <span id="assigned-to-info" style="font-size:12px;color:#4a5568"></span>
+            </div>
+          </div>
           <!-- Site Info -->
           <div style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3faa;margin-bottom:12px">Site Information</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -350,19 +528,45 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             </div>
           </div>
 
-          <!-- Score / Verdict Summary -->
+          <!-- Score Summary -->
           <div style="background:#f8fafc;border:1px solid #e2e4e9;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
             <div>
               <div style="font-size:11px;color:#8a90a0;font-weight:600;text-transform:uppercase">Snag Score</div>
               <div id="pm-score" style="font-size:28px;font-weight:700;color:#0d1526">0</div>
             </div>
-            <div>
-              <div style="font-size:11px;color:#8a90a0;font-weight:600;text-transform:uppercase">Verdict</div>
-              <div id="pm-verdict-badge" style="font-size:14px;font-weight:700;padding:4px 12px;border-radius:20px;background:#f1f5f9;color:#475569;display:inline-block">Pending</div>
-            </div>
             <div style="margin-left:auto;font-size:12px;color:#8a90a0">Score updates as you fill checklist below</div>
           </div>
 
+          <!-- Workflow Action Section -->
+          <div id="pm-workflow-section" style="background:#f8fafc;border:1px solid #e2e4e9;border-radius:10px;padding:14px;margin-bottom:16px;display:none">
+            <div style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3faa;margin-bottom:10px">Workflow Action</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <div onclick="selectPATAction('approve')" class="pm-verdict-opt" style="flex:1;min-width:140px;padding:12px;text-align:center;border:1px solid #e2e4e9;cursor:pointer;font-weight:600;font-size:13px;transition:.15s">Approve & Next Stage</div>
+              <div onclick="selectPATAction('partial')" class="pm-verdict-opt" style="flex:1;min-width:140px;padding:12px;text-align:center;border:1px solid #e2e4e9;border-left:none;cursor:pointer;font-weight:600;font-size:13px;transition:.15s">Partial Approve</div>
+              <div onclick="selectPATAction('reject')" class="pm-verdict-opt" style="flex:1;min-width:140px;padding:12px;text-align:center;border:1px solid #e2e4e9;border-left:none;cursor:pointer;font-weight:600;font-size:13px;transition:.15s">Reject</div>
+            </div>
+            <div id="pm-action-details" style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e4e9;display:none">
+              <div style="margin-bottom:8px;font-size:12px;color:#4a5568">Select next recipient:</div>
+              <select id="pm-next-recipient" style="width:100%;padding:8px;border:1px solid #e2e4e9;border-radius:6px;font-size:12px" onchange="updateWorkflowPreview()">
+                <option value="">-- Select person --</option>
+              </select>
+              <div style="margin-top:12px">
+                <div style="font-size:12px;color:#4a5568;margin-bottom:6px">Comments (required for Partial/Reject):</div>
+                <textarea id="pm-action-comments" style="width:100%;min-height:60px;padding:8px;border:1px solid #e2e4e9;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical" placeholder="Enter comments for the next team..."></textarea>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+                <button onclick="cancelPATAction()" style="padding:6px 12px;border:1px solid #e2e4e9;border-radius:6px;background:#fff;cursor:pointer;font-size:12px">Cancel</button>
+                <button onclick="submitPATAction()" class="btn-primary" style="padding:6px 16px;font-size:12px">Submit</button>
+              </div>
+            </div>
+            <div id="pm-workflow-preview" style="margin-top:12px;padding:10px;background:#fff;border-radius:6px;font-size:12px;display:none"></div>
+          </div>
+
+          <!-- Project Images Gallery -->
+          <div id="pm-images-container" style="margin-bottom:16px">
+            <!-- Images will be rendered here by JS -->
+          </div>
+          
           <!-- Embedded PAT iframe-like section -->
           <div style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3faa;margin-bottom:10px">
             PAT Checklist — Fill all sections below
@@ -371,10 +575,19 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             <!-- built by JS -->
           </div>
 
-          <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+          <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end" id="pat-form-footer">
             <button onclick="closePATModal()" style="padding:10px 20px;border:1px solid #e2e4e9;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">Cancel</button>
-            <button onclick="savePATForm()" class="btn-primary" style="padding:10px 24px;font-size:14px">
-              <i class="ti ti-device-floppy"></i> Save Project
+            <button onclick="savePATForm('draft')" class="btn-primary" style="padding:10px 24px;font-size:14px" id="btn-save-draft">
+              <i class="ti ti-device-floppy"></i> Save Draft
+            </button>
+            <button onclick="openAssignModal()" class="btn-primary" style="padding:10px 24px;font-size:14px;background:#166534;display:none" id="btn-submit-next">
+              <i class="ti ti-send"></i> Submit to Next Stage
+            </button>
+            <button onclick="approveFinalPAT()" class="btn-primary" style="padding:10px 24px;font-size:14px;background:#166534;display:none" id="btn-final-approve">
+              <i class="ti ti-check"></i> Final Approve & Complete
+            </button>
+            <button onclick="rejectPATWithReason()" class="btn-primary" style="padding:10px 24px;font-size:14px;background:#dc2626;display:none" id="btn-reject">
+              <i class="ti ti-x"></i> Reject
             </button>
           </div>
         </div>
@@ -385,6 +598,17 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 </div>
 
 <script>
+    // ============================================
+    // EMOJI-FREE PROFESSIONAL INTERFACE
+    // All emoji have been removed from this file for a professional appearance.
+    // The following utility functions are available for emoji detection/removal:
+    // - containsEmoji(text): boolean - Check if text contains emoji
+    // - removeEmoji(text): string - Remove all emoji from text
+    // - scanAndRemoveEmojiFromPage(): object - Scan entire page and remove emoji
+    // - checkForEmoji(element): object - Check specific element for emoji
+    // Usage: To scan and remove all emoji from the page, call: scanAndRemoveEmojiFromPage()
+    // ============================================
+    
     // Tab Switching Logic
     const userEmail = new URLSearchParams(window.location.search).get('userEmail');
     const tabs = document.querySelectorAll('.tab');
@@ -453,7 +677,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         if (!confirm('Are you sure you want to log out?')) return;
         
         const token = sessionStorage.getItem('sd_token');
-        gasCall('logoutUser', [token], redirectToAuth, redirectToAuth);
+        gasCall('logoutUser', [], redirectToAuth, redirectToAuth);
     });
 
     // GAS Safety Wrapper
@@ -504,17 +728,138 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         });
     }
 
+    // PAT Project Image Storage
+    let projectImages = {}; // Stores images by projectId: { projectId: [base64Image1, base64Image2, ...] }
+
+    // Emoji detection and removal utility functions
+    /**
+     * Detect if text contains emoji characters
+     * @param {string} text - Text to check
+     * @returns {boolean} - True if emoji found
+     */
+    function containsEmoji(text) {
+        if (!text || typeof text !== 'string') return false;
+        // Comprehensive emoji regex covering most common ranges
+        const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2702}-\u{27B0}\u{24C0}-\u{2426A}]/u;
+        return emojiRegex.test(text);
+    }
+
+    /**
+     * Remove all emoji from text
+     * @param {string} text - Text to clean
+     * @returns {string} - Text with emoji removed
+     */
+    function removeEmoji(text) {
+        if (!text || typeof text !== 'string') return text || '';
+        // Remove all emoji characters
+        const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2702}-\u{27B0}\u{24C0}-\u{2426A}]/gu;
+        return text.replace(emojiRegex, '');
+    }
+
+    /**
+     * Scan the entire page and remove all emoji from text content
+     * @returns {Object} - Summary of emoji found and removed
+     */
+    function scanAndRemoveEmojiFromPage() {
+        let emojiCount = 0;
+        const elements = document.querySelectorAll('*');
+        
+        elements.forEach(el => {
+            // Check text nodes in this element
+            const walker = document.createTreeWalker(
+                el,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            while ((node = walker.nextNode())) {
+                const originalText = node.nodeValue;
+                if (originalText && containsEmoji(originalText)) {
+                    const cleanedText = removeEmoji(originalText);
+                    node.nodeValue = cleanedText;
+                    emojiCount++;
+                }
+            }
+            
+            // Also check attributes that might contain emoji
+            if (el.attributes) {
+                for (let attr of el.attributes) {
+                    if (attr.value && containsEmoji(attr.value)) {
+                        attr.value = removeEmoji(attr.value);
+                        emojiCount++;
+                    }
+                }
+            }
+        });
+        
+        return {
+            success: true,
+            emojiRemoved: emojiCount,
+            message: `Scanned page and removed ${emojiCount} emoji instance(s).`
+        };
+    }
+
+    /**
+     * Check if a specific element contains emoji
+     * @param {HTMLElement|string} element - Element or text to check
+     * @returns {Object} - Result with emoji found and their positions
+     */
+    function checkForEmoji(element) {
+        let text = typeof element === 'string' ? element : (element.textContent || '');
+        const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2702}-\u{27B0}\u{24C0}-\u{2426A}]/gu;
+        const matches = text.match(emojiRegex) || [];
+        
+        return {
+            hasEmoji: matches.length > 0,
+            emojiFound: matches,
+            count: matches.length,
+            text: text
+        };
+    }
+
+    // Global refresh function that reloads all data including PAT projects
+    function refreshAllData() {
+        loadAllData();
+        loadPATProjects(true); // Force refresh from sheet
+        // Also refresh the AI context by reloading PAT data
+        const chatMessages = document.getElementById('admin-chat-messages');
+        if (chatMessages) {
+            const systemMsg = document.createElement('div');
+            systemMsg.className = 'msg bot';
+            systemMsg.innerHTML = '[SYSTEM] Data refreshed. All caches synchronized.';
+            chatMessages.appendChild(systemMsg);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        }
+    }
+
     // Load Real Data from Sheet
     window.onload = () => {
         // Setup User Identity
         const storedName = sessionStorage.getItem('sd_name') || 'Admin User';
         const storedEmail = userEmail || sessionStorage.getItem('sd_email') || 'admin@fob.ng';
         const storedRole = sessionStorage.getItem('sd_role') || 'Admin';
-        const storedDepartment = sessionStorage.getItem('sd_department') || 'N/A';
+        const storedDepartment = (sessionStorage.getItem('sd_department') || '').toLowerCase();
         
         document.getElementById('nav-name').innerText = storedName;
         document.getElementById('nav-avatar').innerText = storedName.split(' ').map(n => n[0]).join('').toUpperCase();
         
+        // Department-based Tab Visibility
+        // Allow admin users to see all tabs, regardless of department
+        const isAdmin = storedRole === 'admin' || storedRole === 'super admin';
+        if (storedDepartment !== 'mec' && !isAdmin) {
+            const restrictedTabs = ['departments', 'users'];
+            restrictedTabs.forEach(id => {
+                const tab = document.querySelector(`.tab[data-target="${id}"]`);
+                if (tab) tab.style.display = 'none';
+            });
+            // Auto-switch to PAT Projects if landing on a restricted tab
+            if (restrictedTabs.includes(document.querySelector('.tab.active').dataset.target)) {
+                document.querySelector('.tab[data-target="pat-projects"]').click();
+            }
+        }
+
         // Populate Settings
         document.getElementById('set-name').value = storedName;
         document.getElementById('set-email').value = storedEmail;
@@ -525,6 +870,9 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             pageTitle.innerText = "System Control Center";
         }
 
+        // Initialize Idris Dashboard if user is Idris
+        initIdrisDashboard();
+
         // Set initial AI welcome message
         gasCall('getDomainConfig', [], res => {
             if (res.success) {
@@ -534,6 +882,8 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         });
 
         loadAllData();
+        // Also load PAT projects on startup so AI has access to current data
+        loadPATProjects();
     };
 
     function loadAllData() {
@@ -734,7 +1084,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
                 <i class="ti ti-photo-plus" style="font-size:15px"></i> Add Image / PDF
             </button>
             <span id="ai-file-count" style="font-size:11px;color:#8a90a0">No files selected</span>
-            <span style="margin-left:auto;font-size:10px;color:#8a90a0;background:#e8ecf5;padding:3px 8px;border-radius:4px">🧠 Cohere Vision Ready</span>
+            <span style="margin-left:auto;font-size:10px;color:#8a90a0;background:#e8ecf5;padding:3px 8px;border-radius:4px">OCR mode - all this was made by idris adeleke</span>
         </div>
         <div id="ai-file-preview" style="display:flex;gap:8px;padding:8px 16px;background:#f8fafc;flex-wrap:wrap"></div>
     `;
@@ -777,7 +1127,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             <div style="position:relative;display:inline-block">
                 ${file.type.startsWith('image/') 
                     ? `<img src="${URL.createObjectURL(file)}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #e2e4e9">`
-                    : `<div style="width:60px;height:60px;background:#f0f4ff;border-radius:8px;border:1px solid #e2e4e9;display:flex;align-items:center;justify-content:center;font-size:24px">📄</div>`
+                    : `<div style="width:60px;height:60px;background:#f0f4ff;border-radius:8px;border:1px solid #e2e4e9;display:flex;align-items:center;justify-content:center;font-size:24px">DOC</div>`
                 }
                 <button onclick="window.removeAIFile(${i})" style="position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border:none;width:18px;height:18px;border-radius:50%;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
                 <div style="font-size:9px;color:#8a90a0;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${file.name}</div>
@@ -851,6 +1201,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
     // ── AI FORM FILLING ENGINE ─────────────────────────────────
     function aiFillPATForm(analysis) {
         try {
+            if (!analysis) return false;
             if(analysis.projectName) document.getElementById('pm-name').value = analysis.projectName;
             if(analysis.siteAddress) document.getElementById('pm-address').value = analysis.siteAddress;
             if(analysis.lat) document.getElementById('pm-lat').value = analysis.lat;
@@ -860,7 +1211,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             if(analysis.workDescription) document.getElementById('pm-desc').value = analysis.workDescription;
             if(analysis.inspectionDate) document.getElementById('pm-date').value = analysis.inspectionDate;
 
-            if(analysis.checklist) {
+            if(analysis.checklist && typeof analysis.checklist === 'object') {
                 Object.entries(analysis.checklist).forEach(([key, val]) => {
                     const radio = document.querySelector(`input[name="${key}"][value="${val}"]`);
                     if(radio) radio.checked = true;
@@ -874,7 +1225,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
                 const vars = document.querySelectorAll('.pm-boq-var');
                 const rems = document.querySelectorAll('.pm-boq-rem');
                 analysis.boq.forEach((item, i) => {
-                    if(i < 10) {
+                    if(i < 25) {
                         if(item.desc) descs[i].value = item.desc;
                         if(item.scope) scopes[i].value = item.scope;
                         if(item.installed) insts[i].value = item.installed;
@@ -887,10 +1238,14 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             if(analysis.snags && Array.isArray(analysis.snags)) {
                 const snagDescs = document.querySelectorAll('.pm-snag-desc');
                 const snagWts = document.querySelectorAll('.pm-snag-wt');
+                const snagDepts = document.querySelectorAll('.pm-snag-dept');
+                const snagAddedBy = document.querySelectorAll('.pm-snag-addedby');
                 analysis.snags.forEach((snag, i) => {
                     if(i < 7) {
                         if(snag.desc) snagDescs[i].value = snag.desc;
                         if(snag.weight) snagWts[i].value = snag.weight;
+                        if(snag.department) snagDepts[i].value = snag.department;
+                        if(snag.addedBy) snagAddedBy[i].value = snag.addedBy;
                     }
                 });
             }
@@ -932,6 +1287,10 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         const openMatch = text.match(/open\s+PAT|show\s+PAT\s+form|create\s+new\s+PAT/i);
         if(openMatch && !patFillMatch) commands.push({type: 'OPEN_PAT'});
         
+        // Handle "fill and click randomly and save it as approved"
+        const randomApproveMatch = text.match(/fill\s+and\s+click\s+randomly\s+and\s+save\s+as\s+approved|random\s+fill\s+and\s+approve|auto\s+fill\s+approve/i);
+        if(randomApproveMatch) commands.push({type: 'RANDOM_FILL_AND_APPROVE'});
+        
         // Command for granular checklist updates
         const checkMatch = text.match(/(set|mark|change)\s+(section|item|all)\s+.*(ok|nok|na)/i);
         if (checkMatch) commands.push({type: 'UPDATE_PAT_CHECKLIST', raw: text});
@@ -953,7 +1312,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         if (pendingFiles.length > 0) {
             const processingMsg = document.createElement('div');
             processingMsg.className = 'msg bot';
-            processingMsg.innerText = `📄 Processing ${pendingFiles.length} document(s)...`;
+            processingMsg.innerText = `[FILE] Processing ${pendingFiles.length} document(s)...`;
             chatMessages.appendChild(processingMsg);
             chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
 
@@ -985,7 +1344,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         // Show user message in UI
         const userMsg = document.createElement('div');
         userMsg.className = 'msg user';
-        userMsg.innerHTML = (message || '') + (pendingFiles.length > 0 ? `<br><span style="font-size:11px;opacity:0.8">📎 ${pendingFiles.length} file(s)</span>` : '');
+        userMsg.innerHTML = (message || '') + (pendingFiles.length > 0 ? `<br><span style="font-size:11px;opacity:0.8">[FILE] ${pendingFiles.length} file(s)</span>` : '');
         chatMessages.appendChild(userMsg);
         chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
 
@@ -995,7 +1354,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 
         const thinkingMsg = document.createElement('div');
         thinkingMsg.className = 'msg bot';
-        thinkingMsg.innerText = imageAttachments.length > 0 ? '🔍 SD-AI is analyzing your documents with vision...' : 'SD-AI is analyzing...';
+        thinkingMsg.innerText = imageAttachments.length > 0 ? '[AI] Analyzing documents with vision...' : 'SD-AI is analyzing...';
         chatMessages.appendChild(thinkingMsg);
         chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
 
@@ -1011,6 +1370,25 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
         };
 
+        // Ensure we have fresh PAT project data for AI context
+        // This prevents the issue where projects are deleted from sheet but not from app cache
+        // Always fetch fresh data from the server to avoid cache stale issues
+        console.log('[SYSTEM] Fetching fresh PAT projects data for AI context...');
+        const freshPATProjects = await new Promise((resolve) => {
+            gasCall('getPATProjects', [], res => {
+                if (res.success) {
+                    // Update the global cache with fresh data
+                    allPATProjects = res.projects;
+                    console.log(`[OK] Loaded ${res.projects.length} fresh PAT projects for AI context`);
+                    resolve(res.projects);
+                } else {
+                    // If fetch fails, use cached data but mark it as potentially stale
+                    console.warn('[WARN] Failed to fetch fresh PAT projects, using cached data:', res.message);
+                    resolve(allPATProjects || []);
+                }
+            });
+        });
+
         // Build context
         const superAdminsCount = globalUsersData.filter(u => u.role === 'super admin').length;
         const adminsCount = globalUsersData.filter(u => u.role === 'admin').length;
@@ -1019,8 +1397,8 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 Directory:
 ${globalUsersData.length > 0 ? globalUsersData.map(u => `- ${u.name} (${u.email}) | Role: ${u.role} | Dept: ${u.department} | Gender: ${u.gender} | ID: ${u.userId} | Status: ${u.status} | Last Login: ${u.lastLoginAt || 'Never'} | Notes: ${u.workflowNotes || 'None'}`).join('\n') : "No users found."}`;
         const deptCtx = `Active Depts: ${globalDeptsData.map(d => d.name).join(', ')}.`;
-        const patSummary = allPATProjects.length > 0 
-            ? `System PAT Records (${allPATProjects.length} total):\n` + allPATProjects.slice(0, 10).map(p => `- [${p.projectId}] ${p.projectName}: Status: ${p.status}, Score: ${p.snagScore}, Verdict: ${p.verdict}, Vendor: ${p.vendor}`).join('\n')
+        const patSummary = freshPATProjects.length > 0 
+            ? `System PAT Records (${freshPATProjects.length} total):\n` + freshPATProjects.slice(0, 10).map(p => `- [${p.projectId}] ${p.projectName}: Dept: ${p.department || 'N/A'}, Status: ${p.workflowStatus || p.status}, Assigned: ${p.assignedToDept || 'Unassigned'}, Score: ${p.snagScore}, Verdict: ${p.verdict}, Vendor: ${p.vendor}`).join('\n')
             : "No PAT projects found in the system records.";
 
         const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband — the central nervous system for internal infrastructure and administrative control.
@@ -1038,9 +1416,10 @@ COMMAND PROTOCOL:
 
 WORKSPACE MANIPULATION (IMPORTANT):
 You control the UI panel beside the chat. If the user wants to "make a new PAT", "open the form", or "start a project", ALWAYS trigger OPEN_PAT. 
-If the user mentions a specific Project ID (e.g., PAT-VTEBVX) to "edit", "open", or "continue", you MUST use LOAD_PAT_PROJECT immediately.
+If the user mentions a specific Project ID (e.g., FOB-VTEBVX) to "edit", "open", or "continue", or if they want to resume the "latest" or "recent" project, you MUST use LOAD_PAT_PROJECT immediately.
+If the user wants to perform a cleanup or delete a project, use DELETE_PAT_PROJECT.
 If the user gives specific instructions like "mark section 1 as ok" or "set items 5 to 10 as NOK", use the FILL_PAT_FORM command to update the checklist.
-Crucially, if the user provides ANY PAT form details (e.g., "project name X", "site address Y", "vendor Z"), IMMEDIATELY generate a FILL_PAT_FORM command with those specific details. DO NOT ask for more information if the user is actively providing it.
+Crucially, if the user provides ANY PAT form details, IMMEDIATELY generate a FILL_PAT_FORM command. DO NOT write a summary; DO NOT ask for more information. ACT FIRST.
 
 PAT CHECKLIST MAPPING:
 - Section 1 (Civil): pmchk0 to pmchk23. The UI displays these as Item #0 to #23.
@@ -1049,24 +1428,86 @@ Use the FILL_PAT_FORM command to update checklist items. You can update multiple
 
 COMMAND LIST:
 - OPEN_PAT: {} - Opens the PAT side-panel workspace.
-- LOAD_PAT_PROJECT: {"projectId": "PAT-XXXXX"} - Fetches data for an existing project and loads it into the side-panel workspace.
-- EXPORT_PAT_PDF: {"projectId": "PAT-XXXXXX"} - Opens the exact PDF-format view for printing or saving.
+- LOAD_PAT_PROJECT: {"projectId": "FOB-XXXXX" or "latest"} - Fetches data for an existing project.
+- EXPORT_PAT_PDF: {"projectId": "FOB-XXXXXX"} - Opens the exact PDF-format view for printing or saving.
+- DELETE_PAT_PROJECT: {"projectId": "FOB-XXXXXX"} - Permanently removes a project from the system.
+- DELETE_ALL_PAT_PROJECTS: {} - Permanently removes ALL projects from the system. (Super Admin only)
 - SAVE_PAT: {} - Triggers the save function for the current PAT.
 - FILL_PAT_FORM: {"projectName","siteAddress","lat","lon","phase","vendor","inspectionDate","workDescription","checklist":{},"boq":[],"snags":[],"signoff":{},"verdict"}
+- FILL_PAT_WITH_RANDOM_DATA: {} - Fills the current PAT form with realistic random data for testing.
+- RANDOM_FILL_AND_APPROVE: {} - Fills PAT with random data, saves, and auto-approves (admin/MEC only).
+- SUBMIT_TO_NEXT_DEPT: {} - Saves and automatically submits to the next department in workflow.
+- CREATE_AND_SUBMIT_PAT: {} - Creates a new PAT with random data, saves it, and submits to the next department in one action.
+- PARTIALLY_APPROVE_PAT: {"comments": "required comments", "projectId": "PAT-XXXXX"} - Partially approves with required comments.
+- REJECT_PAT_WITH_REASON: {"reason": "required reason", "projectId": "PAT-XXXXX"} - Rejects PAT back to previous department.
+- SUBMIT_TO_DEPARTMENT: {"department": "Project Team/Planning Team/Service Delivery", "comments": "optional"} - Submits to entire next department.
 - CREATE_USER: {"name","email","password","dept","role","gender"}
 - UPDATE_USER_ROLE: {"userId","role"}
 - UPDATE_USER: {"userId", "updates": {"name", "email", "dept", "gender"}}
 - DELETE_USER: {"userId"}
 - CREATE_DEPT: {"name"}
-- REFRESH_SYSTEM_DATA: {}
+- REFRESH_SYSTEM_DATA: {} - Forces a full refresh of all system data from the sheet.
+- LIST_PAT_PROJECTS: {} - Lists all current PAT projects from the sheet (bypasses cache).
+- ADD_IMAGE_TO_PROJECT: {"projectId": "FOB-XXXXX", "caption"?} - Adds uploaded image(s) to specified PAT project. User must upload image(s) first, then specify project ID.
+- GET_PAT_STATUS: {} - Returns comprehensive status of all PAT projects including department, workflow status, scores, and image counts.
+- SHARE_IDRIS_DASHBOARD: {"email": "user@fob.ng", "durationMinutes": 5} - Temporarily shares Idris dashboard with another user for specified minutes (default 5). After time expires, access is automatically revoked.
+- GET_SHARED_DASHBOARD: {} - Retrieves Idris dashboard if current user has active share access.
+
+SYSTEM ACCOUNT SETUP:
+If asked to create "System Accounts" for testing, create one for each department (MEC, Project Team, Planning Team, Service Delivery) with:
+- Role: admin
+- Password: [empty or "system"]
+- Emails: mec-test@fob.ng, project-test@fob.ng, planning-test@fob.ng, service-test@fob.ng.
+
+WORKFLOW STAGES & RULES:
+The PAT workflow follows this path:
+1. Draft (MEC) -> 2. Awaiting Project Team -> 3. Awaiting Planning Team -> 4. Awaiting Service Delivery -> 5. Awaiting Final MEC Review -> 6. Completed
+
+DEPARTMENT WORKFLOW RULES:
+- Only MEC can create and edit Drafts
+- Project Team receives from MEC, can partially approve with comments, approve to Planning, or reject back to MEC
+- Planning Team receives from Project, can partially approve with comments, approve to Service Delivery, or reject back to Project
+- Service Delivery receives from Planning, can partially approve with comments, approve to Final MEC, or reject back to Planning
+- Final MEC Review: Only MEC can complete the PAT
+- Rejected PATs go back to the previous department with required comments
+- Partial approvals require comments and move to next department
+- SNag List is the ONLY editable section in PDFs - shows department that added each snag
+
+AUTO-ASSIGNMENT:
+When submitting to next department, the AI will ask who to send to or can send to entire department. Use SUBMIT_TO_NEXT_DEPT for individual selection, SUBMIT_TO_DEPARTMENT for department-wide.
 
 DOCUMENT INTELLIGENCE:
 When user uploads images/documents:
 1. READ all text visible in the image/document using your vision capability
-2. If it's a PAT form, inspection report, or project document, extract ALL fields
-3. Look for: project names, addresses, vendor names, dates, checklist items, scores, signatures
-4. If tables are present, extract all row data
-5. Return structured data that can be used to fill the PAT form
+2. IMMEDIATELY output a FILL_PAT_FORM command.
+3. If it's a PAT form, extraction MUST map to pmchk0-69 by fuzzy matching the item text.
+4. Look for: project names, addresses, vendor names, dates, checklist items, scores, signatures
+5. If tables are present, extract all row data
+6. Return structured data that can be used to fill the PAT form
+
+IMAGE ATTACHMENT TO PROJECTS:
+When user wants to add images to a PAT project:
+1. Instruct user to first upload image(s) using the file upload button
+2. Then ask for the Project ID (e.g., "FOB-XXXXX") they want to add images to
+3. Use ADD_IMAGE_TO_PROJECT command with the projectId parameter
+4. Confirm successful addition with image count
+5. Remind user they can add multiple images to a project
+
+PAT PROJECT STATUS TRACKING:
+The AI has full access to all PAT project states including:
+- Project ID, Name, Site Address, Department
+- Workflow Status (Draft, Awaiting Project Team, Awaiting Planning Team, Awaiting Service Delivery, Awaiting Final MEC Review, Completed, Rejected)
+- Snag Score and Verdict
+- Assigned users and departments
+- Image counts per project
+Use GET_PAT_STATUS to get a comprehensive overview of all projects when user asks about project status.
+
+WORKFLOW COMMANDS:
+- MEC can send to Project Team
+- Project Team can send to Planning Team or reject to MEC
+- Planning Team can send to Service Delivery or reject to MEC
+- Service Delivery can send to Final MEC Review or reject to MEC
+- Final MEC Review can complete or reject
 
 PAT FORM FILLING:
 When user describes a project or uploads a PAT document, analyze and extract:
@@ -1074,18 +1515,36 @@ When user describes a project or uploads a PAT document, analyze and extract:
 2. For checklist: if document shows specific items, set them. Otherwise default all to "ok" unless issues mentioned
 3. For BOQ: extract material quantities if present in document
 When the user provides a project name, site address, vendor, or any other specific field value, immediately generate a FILL_PAT_FORM command with *only* that field updated. Do not wait for a complete set of information before acting on individual field updates.
+
+WORKFLOW DEPARTMENT ROUTING:
+When a user wants to "send to next department", "push to project", or similar:
+1. If they specify a department name, use SUBMIT_TO_DEPARTMENT with that department
+2. If they want to send to everyone in next department, use SUBMIT_TO_DEPARTMENT with the next department name
+3. If they want to select a specific person, use SUBMIT_TO_NEXT_DEPT to open the assignment modal
+4. Always ask for comments when partially approving or rejecting
+5. Rejection MUST include a reason and will automatically send back to previous department
+6. Partial approval MUST include comments explaining what needs to be addressed
+
+DEPARTMENT TRANSITIONS:
+- MEC -> Project Team (Draft to Awaiting Project)
+- Project Team -> Planning Team (Awaiting Project to Awaiting Planning)
+- Planning Team -> Service Delivery (Awaiting Planning to Awaiting Service Delivery)
+- Service Delivery -> MEC Final Review (Awaiting Service Delivery to Awaiting Final MEC)
+- MEC Final Review -> Completed
 4. For snags: extract any mentioned issues with weights
 5. For signoff: extract team names if mentioned
 6. Calculate verdict based on snag rules (Any CR=NOK or score >= 3 = REJECTED)
 
-Return extracted data as JSON-CMD with type "FILL_PAT_FORM".
+SYNCHRONIZATION NOTE: If the user mentions that a project exists in the app but not in the sheet, or if they say they deleted something from the sheet but it still appears in the app, USE THE LIST_PAT_PROJECTS command FIRST to get the current state from the system records. This ensures you're working with fresh data.
+
+NEVER summarize in text what you will do. ALWAYS use the json-cmd block first.
 
 TERMINOLOGY: Refer to the backend as "The System", "Core Infrastructure", or "System Records". NEVER use terms like "spreadsheet" or "sheet".
 
 CONTEXT:
 Users: ${userCtx}
 Depts: ${deptCtx}
-PAT Records: ${patSummary}
+PAT Records (Note: IDs now use FOB- prefix): ${patSummary}
 
 BEHAVIOR:
 - Be concise but thorough
@@ -1122,28 +1581,416 @@ BEHAVIOR:
                     openPATForm(true);
                     return { success: true, message: 'PAT Workspace opened beside chat.' };
                 case 'EXPORT_PAT_PDF':
-                    viewPATProject(cmd.params.projectId);
+                    const pdfId = (cmd.params.projectId || '').replace('FOB-', 'PAT-');
+                    viewPATProject(pdfId);
                     return { success: true, message: 'PDF export window opened for project ' + cmd.params.projectId };
                 case 'LOAD_PAT_PROJECT':
-                    const res = await gasCallAsync('getPATProjectById', [cmd.params.projectId]);
+                    let targetId = cmd.params.projectId;
+                    if (targetId === 'latest' || !targetId) {
+                        if (allPATProjects.length > 0) {
+                            const sorted = [...allPATProjects].sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+                            targetId = sorted[0].projectId;
+                        } else {
+                            return { success: false, message: 'No recent projects found to load.' };
+                        }
+                    }
+                    const normalizedId = (targetId || '').replace('FOB-', 'PAT-');
+                    const res = await gasCallAsync('getPATProjectById', [normalizedId]);
                     if(res.success) {
                         openPATForm(true); 
                         aiFillPATForm(res.project);
-                        return { success: true, message: `Project ${cmd.params.projectId} successfully loaded into workspace.` };
+                        return { success: true, message: `Project ${targetId} successfully loaded into workspace.` };
                     }
                     return { success: false, message: res.message || 'Project not found.' };
                 case 'FILL_PAT_FORM':
-                    const sidePanel = document.getElementById('ai-side-panel');
-                    if(sidePanel.style.display !== 'flex') openPATForm(true);
-                    const success = aiFillPATForm(cmd.params);
-                    return { success: success, message: success ? 'PAT Workspace updated. Check the side panel.' : 'Form fill partially failed.' };
+                    try {
+                      const sidePanel = document.getElementById('ai-side-panel');
+                      if(sidePanel.style.display !== 'flex') openPATForm(true);
+                      // Wait a bit for form to initialize
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                      const success = aiFillPATForm(cmd.params);
+                      return { success: success, message: success ? 'PAT Workspace updated. Check the side panel.' : 'Form fill partially failed. Please ensure the PAT form is open and try again.' };
+                    } catch(e) {
+                      console.error('PAT form fill error:', e);
+                      return { success: false, message: 'Failed to fill PAT form: ' + e.message };
+                    }
                 case 'REFRESH_SYSTEM_DATA':
-                    loadAllData();
-                    loadPATProjects();
-                    return { success: true, message: 'System data re-synchronized. All UI modules updated.' };
+                    refreshAllData();
+                    return { success: true, message: 'System data re-synchronized. All UI modules and AI context updated.' };
+                case 'DELETE_PAT_PROJECT':
+                    {
+                        if (!cmd.params || !cmd.params.projectId) {
+                            return { success: false, message: 'Project ID is required for deletion.' };
+                        }
+                        // Try multiple ID formats
+                        const projectId = cmd.params.projectId;
+                        const idVariations = [
+                            projectId,
+                            projectId.replace('FOB-', 'PAT-'),
+                            projectId.replace('PAT-', 'FOB-'),
+                            projectId.replace(/^(FOB|PAT)-/, 'PAT-'),
+                            projectId.replace(/^(FOB|PAT)-/, 'FOB-')
+                        ];
+                        
+                        let delRes = { success: false, message: 'Project not found with any ID format' };
+                        
+                        // Try each variation until one works
+                        for (const id of idVariations) {
+                            const res = await gasCallAsync('deletePATProject', [id]);
+                            if (res.success) {
+                                delRes = res;
+                                loadPATProjects();
+                                break;
+                            }
+                        }
+                        
+                        if (!delRes.success) {
+                            // If still not found, list all projects to help user
+                            const listRes = await gasCallAsync('getPATProjects', []);
+                            if (listRes.success) {
+                                const projectList = listRes.projects.map(p => `[${p.projectId}] ${p.projectName}`).join(', ');
+                                delRes.message = `Project not found. Available projects: ${projectList}`;
+                            }
+                        }
+                        return delRes;
+                    }
+                case 'DELETE_ALL_PAT_PROJECTS':
+                    const userRole = sessionStorage.getItem('sd_role') || '';
+                    if (userRole !== 'super admin') {
+                        return { success: false, message: 'Only Super Admin can delete all PAT projects.' };
+                    }
+                    if (!confirm('Are you absolutely sure you want to delete ALL PAT projects? This cannot be undone.')) {
+                        return { success: false, message: 'Deletion cancelled by user.' };
+                    }
+                    const res2 = await gasCallAsync('deleteAllPATProjects', []);
+                    if (res2.success) {
+                        loadPATProjects();
+                    }
+                    return res2;
+                case 'FILL_PAT_WITH_RANDOM_DATA':
+                    try {
+                      const sidePanel2 = document.getElementById('ai-side-panel');
+                      if(sidePanel2.style.display !== 'flex') openPATForm(true);
+                      // Wait a bit for form to initialize
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                      const dataForRandom = generateRandomPATData();
+                      const success2 = aiFillPATForm(dataForRandom);
+                      return { success: success2, message: success2 ? 'PAT form filled with random data. Review and save.' : 'Failed to fill form. Please try again with a specific project loaded.' };
+                    } catch(e) {
+                      console.error('Random PAT fill error:', e);
+                      return { success: false, message: 'Failed to fill form with random data: ' + e.message };
+                    }
+                case 'LIST_PAT_PROJECTS':
+                    // Force refresh PAT projects from sheet
+                    const listRes = await gasCallAsync('getPATProjects', []);
+                    if (listRes.success) {
+                        allPATProjects = listRes.projects;
+                        const projectList = allPATProjects.length > 0 
+                            ? allPATProjects.map(p => `• [${p.projectId}] ${p.projectName} - Status: ${p.workflowStatus || p.status}, Score: ${p.snagScore}, Verdict: ${p.verdict}`).join('\n')
+                            : 'No projects found';
+                        return { 
+                            success: true, 
+                            message: `Current PAT Projects in System:\n${projectList}`,
+                            projects: allPATProjects
+                        };
+                    }
+                    return { success: false, message: listRes.message || 'Failed to load projects' };
+                case 'SUBMIT_TO_NEXT_DEPT':
+                    if(!currentEditingProject) {
+                        return { success: false, message: 'No project currently loaded for submission.' };
+                    }
+                    await executeCommand({type: 'SAVE_PAT'});
+                    openAssignModal();
+                    return { success: true, message: 'Initiating auto-submit to next department...' };
+                case 'CREATE_AND_SUBMIT_PAT':
+                    const sidePanel3 = document.getElementById('ai-side-panel');
+                    if(sidePanel3.style.display !== 'flex') openPATForm(true);
+                    const newRandomData = generateRandomPATData();
+                    const success3 = aiFillPATForm(newRandomData);
+                    if (success3) {
+                        await executeCommand({type: 'SAVE_PAT'});
+                        await executeCommand({type: 'SUBMIT_TO_NEXT_DEPT'});
+                    }
+                    return { success: success3, message: success3 ? 'Creating PAT with random data, saving, and submitting to next department...' : 'Failed to fill form.' };
+                case 'RANDOM_FILL_AND_APPROVE':
+                    try {
+                        const sidePanel4 = document.getElementById('ai-side-panel');
+                        if(sidePanel4.style.display !== 'flex') openPATForm(true);
+                        // Wait for form to initialize
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        // Fill with random data
+                        const randomData = generateRandomPATData();
+                        const fillSuccess = aiFillPATForm(randomData);
+                        
+                        if (!fillSuccess) {
+                            return { success: false, message: 'Failed to fill form with random data.' };
+                        }
+                        
+                        // Save the form
+                        await executeCommand({type: 'SAVE_PAT'});
+                        
+                        // Auto-approve with comments
+                        if (currentEditingProject) {
+                            // Simulate approval comments
+                            const comments = "Auto-approved with random data generation";
+                            
+                            // Check if we can approve (must be assigned user or admin)
+                            const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+                            if (myRole === 'admin' || myRole === 'super admin' || myRole === 'mec') {
+                                // Use the approve function
+                                const approveRes = await gasCallAsync('approvePAT', [
+                                    currentEditingProject.projectId,
+                                    comments
+                                ]);
+                                
+                                if (approveRes.success) {
+                                    return { 
+                                        success: true, 
+                                        message: '✅ COMPLETED: Random PAT filled, saved, and approved! ' + 
+                                                 'Project: ' + (randomData.projectName || 'N/A') + 
+                                                 ' | Score: ' + (randomData.snags ? randomData.snags.reduce((sum, s) => sum + (parseInt(s.weight) || 0), 0) : 0)
+                                    };
+                                } else {
+                                    return { 
+                                        success: false, 
+                                        message: 'Failed to auto-approve: ' + approveRes.message 
+                                    };
+                                }
+                            } else {
+                                return { 
+                                    success: true, 
+                                    message: '✅ COMPLETED: Random PAT filled and saved! Ready for approval. ' + 
+                                             'Project: ' + (randomData.projectName || 'N/A')
+                                };
+                            }
+                        } else {
+                            return { success: false, message: 'No project loaded after save.' };
+                        }
+                    } catch(e) {
+                        console.error('Random fill and approve error:', e);
+                        return { success: false, message: 'Failed to complete random fill and approve: ' + e.message };
+                    }
+                
+                // Image management for PAT projects
+                case 'ADD_IMAGE_TO_PROJECT':
+                    {
+                        if (!cmd.params || !cmd.params.projectId) {
+                            return { success: false, message: 'Project ID is required.' };
+                        }
+                        if (!pendingFiles || pendingFiles.length === 0) {
+                            return { success: false, message: 'No images to add. Please upload an image first.' };
+                        }
+                        
+                        // Refresh PAT data to ensure we have the latest projects
+                        const res = await gasCallAsync('getPATProjects', []);
+                        if (res.success) {
+                            allPATProjects = res.projects;
+                        }
+                        
+                        const projectId = cmd.params.projectId.replace('FOB-', 'PAT-');
+                        const targetProject = allPATProjects.find(p => p.projectId === projectId || p.projectId === cmd.params.projectId);
+                        
+                        if (!targetProject) {
+                            return { success: false, message: `Project not found: ${cmd.params.projectId}` };
+                        }
+                        
+                        // Convert pending files to base64
+                        const imagePromises = pendingFiles.map(file => fileToBase64(file));
+                        const images = await Promise.all(imagePromises);
+                        
+                        // Store images for this project
+                        if (!projectImages[targetProject.projectId]) {
+                            projectImages[targetProject.projectId] = [];
+                        }
+                        projectImages[targetProject.projectId] = projectImages[targetProject.projectId].concat(images);
+                        
+                        // Clear pending files
+                        pendingFiles = [];
+                        renderFilePreview();
+                        
+                        return { 
+                            success: true, 
+                            message: `Added ${images.length} image(s) to project ${targetProject.projectId}.`,
+                            projectId: targetProject.projectId,
+                            imageCount: projectImages[targetProject.projectId].length
+                        };
+                    }
+                    
+                case 'GET_PAT_STATUS':
+                    // Return comprehensive status of all PAT projects
+                    const listRes2 = await gasCallAsync('getPATProjects', []);
+                    if (listRes2.success) {
+                        allPATProjects = listRes2.projects;
+                        const detailedStatus = allPATProjects.map(p => {
+                            const dept = p.assignedToDept || p.department || p.submittedByDept || 'MEC';
+                            const workflow = p.workflowStatus || 'Unknown';
+                            const score = p.snagScore || 0;
+                            const verdict = p.verdict || 'Pending';
+                            const imagesCount = projectImages[p.projectId] ? projectImages[p.projectId].length : 0;
+                            return `[${p.projectId}] ${p.projectName} | Dept: ${dept} | Status: ${workflow} | Score: ${score} | Verdict: ${verdict} | Images: ${imagesCount}`;
+                        }).join('\n');
+                        
+                        // Group by department
+                        const byDept = {};
+                        allPATProjects.forEach(p => {
+                            const dept = p.assignedToDept || p.department || p.submittedByDept || 'MEC';
+                            if (!byDept[dept]) byDept[dept] = [];
+                            byDept[dept].push(p);
+                        });
+                        
+                        const deptSummary = Object.entries(byDept).map(([dept, projects]) => {
+                            const total = projects.length;
+                            const completed = projects.filter(p => p.workflowStatus === 'Completed').length;
+                            const draft = projects.filter(p => p.workflowStatus === 'Draft').length;
+                            const rejected = projects.filter(p => p.workflowStatus === 'Rejected').length;
+                            return `${dept}: ${total} total (Completed: ${completed}, Draft: ${draft}, Rejected: ${rejected})`;
+                        }).join('\n');
+                        
+                        return {
+                            success: true,
+                            message: `PAT Project Status Overview:\n\nBy Department:\n${deptSummary}\n\nDetailed List:\n${detailedStatus}`,
+                            projects: allPATProjects,
+                            summary: byDept
+                        };
+                    }
+                    return { success: false, message: listRes2.message || 'Failed to load projects' };
+                case 'SHARE_IDRIS_DASHBOARD':
+                    {
+                        const email = cmd.params.email || '';
+                        const duration = cmd.params.durationMinutes || 5;
+                        if (!email || !email.includes('@')) {
+                            return { success: false, message: 'Please provide a valid email address to share with.' };
+                        }
+                        const res = await gasCallAsync('createDashboardShareToken', [email, duration]);
+                        if (res.success) {
+                            addSystemNote(`[SHARE] Dashboard shared with ${email} for ${duration} minutes. Expires: ${new Date(res.expiresAt).toLocaleTimeString()}`);
+                            return { success: true, message: `Dashboard shared with ${email} for ${duration} minutes.` };
+                        }
+                        return res;
+                    }
+                case 'GET_SHARED_DASHBOARD':
+                    {
+                        const res = await gasCallAsync('getSharedDashboard', []);
+                        if (res.success && res.shared) {
+                            // Store shared analytics for display
+                            window.sharedDashboardAnalytics = res.analytics;
+                            window.sharedDashboardFrom = res.from;
+                            window.sharedDashboardExpires = res.expiresAt;
+                            addSystemNote(`[SHARE] Accessing shared dashboard from ${res.from}. Expires: ${new Date(res.expiresAt).toLocaleTimeString()}`);
+                            return { success: true, message: `Accessing shared dashboard from ${res.from}` };
+                        }
+                        return res;
+                    }
+                    
                 default:
                     return { success: false, message: `Unknown command: ${cmd.type}` };
             }
+        }
+
+        // ── RANDOM PAT DATA GENERATOR ────────────────────────────
+        function generateRandomPATData() {
+            const projectNames = [
+                "Fiber Deployment - Lagos Island Phase 1",
+                "FTTH Expansion - Victoria Island",
+                "Broadband Rollout - Ikeja GRA",
+                "Network Upgrade - Lekki Phase 2",
+                "Fiber Connection - Surulere Industrial",
+                "FTTH Installation - Ogudu Estate",
+                "Backbone Extension - Ikorodu Road",
+                "Fiber Optic Deployment - Apapa Port",
+                "Network Infrastructure - Ajah Axis",
+                "Broadband Access - Yaba Tech Hub"
+            ];
+            const vendors = [
+                "TechCable Nigeria", "FiberNet Solutions", "Connectra Systems", 
+                "OptiLink Nigeria", "DataCore Networks", "InfraCom Nigeria",
+                "NetBridge Solutions", "CableWorld Nigeria", "SpeedLine Networks",
+                "DigitalPath Nigeria"
+            ];
+            const addresses = [
+                "123 Main Street, Lagos Island, Lagos",
+                "456 Commercial Ave, Victoria Island, Lagos",
+                "789 Industrial Road, Ikeja, Lagos",
+                "321 Tech Drive, Lekki, Lagos",
+                "654 Business Way, Surulere, Lagos",
+                "987 Residential Street, Ogudu, Lagos",
+                "135 Port Road, Apapa, Lagos",
+                "246 Tech Hub, Yaba, Lagos"
+            ];
+            const descriptions = [
+                "Fiber optic cable deployment for residential area",
+                "FTTH network expansion project",
+                "Backbone infrastructure upgrade",
+                "New fiber route installation",
+                "Broadband access network deployment",
+                "Fiber to the home installation",
+                "Network capacity expansion",
+                "Fiber optic cable laying and termination"
+            ];
+            const phases = ["Phase 1", "Phase 2", "Phase 3", "Final Phase", "Pilot", "Expansion"];
+            
+            const randomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            const randomDate = () => {
+                const d = new Date();
+                d.setDate(d.getDate() - Math.floor(Math.random() * 30));
+                return d.toISOString().split('T')[0];
+            };
+            const randomLat = () => (6 + Math.random() * 0.5).toFixed(6);
+            const randomLon = () => (3 + Math.random() * 0.5).toFixed(6);
+            
+            // Generate random checklist - mostly OK with some NOK and NA
+            const checklist = {};
+            for (let i = 0; i < 70; i++) {
+                const rand = Math.random();
+                if (rand < 0.05) checklist[`pmchk${i}`] = 'nok';
+                else if (rand < 0.15) checklist[`pmchk${i}`] = 'na';
+                else checklist[`pmchk${i}`] = 'ok';
+            }
+            
+            // Generate random BOQ data
+            const boq = [];
+            for (let i = 0; i < 15; i++) {
+                if (Math.random() > 0.3) {
+                    boq.push({
+                        desc: PAT_BOQ_ITEMS[i] || `Item ${i+1}`,
+                        scope: Math.floor(Math.random() * 100) + 1,
+                        installed: Math.floor(Math.random() * 100) + 1,
+                        variance: Math.floor(Math.random() * 10),
+                        remark: Math.random() > 0.7 ? 'On schedule' : ''
+                    });
+                }
+            }
+            
+            // Generate random snags with department tracking
+            const snags = [];
+            const numSnags = Math.floor(Math.random() * 5);
+            const departments = ["MEC", "Project Team", "Planning Team", "Service Delivery"];
+            for (let i = 0; i < numSnags; i++) {
+                snags.push({
+                    desc: `Snag issue ${i+1} - ${['Cable damage', 'Equipment malfunction', 'Installation error', 'Testing failure', 'Documentation incomplete'][Math.floor(Math.random() * 5)]}`,
+                    weight: Math.random() > 0.5 ? 1 : (Math.random() > 0.5 ? 2 : 3),
+                    department: departments[Math.floor(Math.random() * departments.length)],
+                    addedBy: "System Generated",
+                    addedAt: new Date().toISOString()
+                });
+            }
+            
+            return {
+                projectName: randomItem(projectNames),
+                siteAddress: randomItem(addresses),
+                lat: randomLat(),
+                lon: randomLon(),
+                phase: randomItem(phases),
+                vendor: randomItem(vendors),
+                inspectionDate: randomDate(),
+                workDescription: randomItem(descriptions),
+                checklist: checklist,
+                boq: boq,
+                snags: snags,
+                signoff: {},
+                verdict: Math.random() > 0.7 ? 'Fully Accepted' : (Math.random() > 0.5 ? 'Partially Accepted' : 'Rejected')
+            };
         }
 
         // ── COHERE VISION API ────────────────────────────────────
@@ -1280,14 +2127,14 @@ BEHAVIOR:
                 }
 
                 if (commands.length > 0) {
-                    addSystemNote(`⚙️ Executing ${commands.length} action(s)...`);
+                    addSystemNote(`[SYSTEM] Executing ${commands.length} action(s)...`);
                     let results = [];
                     for (const cmd of commands) {
                         const res = await executeCommand(cmd);
                         const resultTxt = `Command ${cmd.type}: ${res.success ? 'SUCCESS' : 'FAILED - ' + res.message}`;
                         results.push(resultTxt);
-                        if (res.success) addSystemNote(`✅ ${cmd.type} completed.`);
-                        else addSystemNote(`❌ ${cmd.type} failed: ${res.message}`, true);
+                        if (res.success) addSystemNote(`[OK] ${cmd.type} completed.`);
+                        else addSystemNote(`[FAIL] ${cmd.type} failed: ${res.message}`, true);
                     }
 
                     chatHistory.push({ role: "assistant", content: aiReply });
@@ -1316,7 +2163,7 @@ BEHAVIOR:
 
             let friendlyMsg = err.message || "Connection failed. Please try again.";
             if (friendlyMsg.includes('429')) {
-                friendlyMsg = "⚠️ SD-AI is currently at capacity on the free tier. Please wait about 30 seconds before trying your request again.";
+                friendlyMsg = "[WARN] SD-AI is currently at capacity on the free tier. Please wait about 30 seconds before trying your request again.";
             }
 
             errDiv.innerText = friendlyMsg;
@@ -1427,13 +2274,92 @@ const PAT_CHK2 = [
   {sev:"CR",item:"Expected Back Reflection on APC Connectors ≤ –60 dB"},
 ];
 
-const PAT_SIGNOFF_TEAMS = ["Vendor","Project Team","Planning Team","SD Team","MEC Team"];
+const PAT_BOQ_ITEMS = [
+  "Fiber Cables",
+  "Total Box – Box",
+  "PCC Cable",
+  "80m Box to Box PCC",
+  "60m Box to Box PCC",
+  "50m Box to Box PCC",
+  "5m Box to Box PCC",
+  "3m Box to Box PCC",
+  "Aluminium Hook",
+  "Belt & Clip",
+  "Small Clamp",
+  "Tiny Small",
+  "½ Sub Box",
+  "⅑ FAT6",
+  "⅛ FAT2",
+  "Installation of Cable Hanger",
+  "Metallic Pole (Supply & Installation)"
+];
+
+const PAT_SIGNOFF_TEAMS = ["MEC Team", "Project Team", "Planning Team", "SD Team"];
 
 function _checkPATEditPermission() {
   const role = (sessionStorage.getItem('sd_role')||'').toLowerCase();
   const dept = (sessionStorage.getItem('sd_department')||'').toLowerCase();
   currentUserCanEditPAT = (dept === 'mec' || dept === 'mech' || role === 'admin' || role === 'super admin');
   return currentUserCanEditPAT;
+}
+
+/**
+ * Check if current user can edit the loaded project based on workflow status
+ * A department can only edit a PAT if they are the current assigned department
+ */
+function canEditCurrentProject() {
+  if (!currentEditingProject) return false;
+  
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  const project = currentEditingProject;
+  const status = project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  const assignedDept = (project.assignedToDept || '').toLowerCase();
+  const assignedEmail = (project.assignedToEmail || '').toLowerCase();
+  
+  // Admins can edit anything
+  if (myRole === 'admin' || myRole === 'super admin') return true;
+  
+  // MEC can edit drafts, rejected, and final review (these are in MEC's hands)
+  if (myDept === 'mec' || myDept === 'mech') {
+    return [PAT_WORKFLOW_STATUS.DRAFT, PAT_WORKFLOW_STATUS.REJECTED, PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC].includes(status);
+  }
+}
+
+/**
+ * Check if current user can edit snags in the loaded project
+ * Only the currently assigned department can edit snags
+ */
+function canEditCurrentProjectSnags() {
+  if (!currentEditingProject) return false;
+  
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  const project = currentEditingProject;
+  const status = project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  const assignedDept = (project.assignedToDept || '').toLowerCase();
+  const assignedEmail = (project.assignedToEmail || '').toLowerCase();
+  
+  // Admins can edit anything
+  if (myRole === 'admin' || myRole === 'super admin') return true;
+  
+  // MEC can edit snags in drafts, rejected, and final review
+  if (myDept === 'mec' || myDept === 'mech') {
+    return [PAT_WORKFLOW_STATUS.DRAFT, PAT_WORKFLOW_STATUS.REJECTED, PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC].includes(status);
+  }
+  
+  // Other departments can only edit snags if they are the assigned department
+  return (assignedDept === myDept || assignedEmail === myEmail);
+}
+  
+  // Other departments can only edit if they are the currently assigned department
+  // or if they are the assigned user
+  if (assignedDept === myDept) return true;
+  if (assignedEmail === myEmail) return true;
+  
+  return false;
 }
 
 function _sevWeight(s){ return s==="CR"?3:s==="MJ"?2:1; }
@@ -1443,12 +2369,63 @@ function _sevStyle(s){
   return "background:#dbeafe;color:#1e40af";
 }
 
-function buildPATModal() {
+// Workflow Status Constants (must match backend)
+const PAT_WORKFLOW_STATUS = {
+  DRAFT: "Draft",
+  AWAITING_PROJECT: "Awaiting Project Team",
+  AWAITING_PLANNING: "Awaiting Planning Team",
+  AWAITING_SERVICE_DELIVERY: "Awaiting Service Delivery",
+  AWAITING_FINAL_MEC: "Awaiting Final MEC Review",
+  COMPLETED: "Completed",
+  REJECTED: "Rejected",
+  PARTIALLY_APPROVED: "Partially Approved"
+};
+
+const PAT_VERDICT_STATUS = {
+  FULLY_ACCEPTED: "Fully Accepted",
+  PARTIALLY_ACCEPTED: "Partially Accepted", 
+  REJECTED: "Rejected"
+};
+
+// Workflow Stage Order
+// Flow: MEC -> Project -> Planning -> Service Delivery -> Final MEC -> Completed
+const PAT_STAGE_FLOW = [
+  { status: PAT_WORKFLOW_STATUS.DRAFT, dept: "MEC", label: "Draft (MEC)" },
+  { status: PAT_WORKFLOW_STATUS.AWAITING_PROJECT, dept: "Project Team", label: "Awaiting Project" },
+  { status: PAT_WORKFLOW_STATUS.AWAITING_PLANNING, dept: "Planning Team", label: "Awaiting Planning" },
+  { status: PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY, dept: "Service Delivery", label: "Awaiting Service Delivery" },
+  { status: PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC, dept: "MEC", label: "Final MEC Review" },
+  { status: PAT_WORKFLOW_STATUS.COMPLETED, dept: "MEC", label: "Completed" },
+  { status: PAT_WORKFLOW_STATUS.REJECTED, dept: "MEC", label: "Rejected" }
+];
+
+// Global variable to store current project being edited
+let currentEditingProject = null;
+
+function buildPATModal(projectData = null) {
   patRadioCounter = 0;
-  currentPMVerdict = "";
   const wrap = document.getElementById("pm-checklist-wrap");
   wrap.innerHTML = "";
-  const canEdit = _checkPATEditPermission();
+  
+  // Determine if user can edit based on workflow status and user role
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  const projectWorkflowStatus = projectData ? (projectData.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT) : PAT_WORKFLOW_STATUS.DRAFT;
+  
+  // Can edit if: MEC user editing draft/rejected, or assigned user editing their assigned PAT
+  let canEdit = false;
+  if (myRole === 'super admin' || myRole === 'admin') {
+    canEdit = true;
+  } else if (myDept === 'mec' || myDept === 'mech') {
+    canEdit = (projectWorkflowStatus === PAT_WORKFLOW_STATUS.DRAFT || 
+               projectWorkflowStatus === PAT_WORKFLOW_STATUS.REJECTED ||
+               projectWorkflowStatus === PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC);
+  } else {
+    // Other departments can only edit if they are the assigned user
+    canEdit = (projectData && projectData.assignedToEmail && 
+               projectData.assignedToEmail.toLowerCase() === sessionStorage.getItem('sd_email').toLowerCase());
+  }
+  
   const ro = canEdit ? "" : " disabled readonly";
   const roStyle = canEdit ? "" : " style=\"opacity:0.6;pointer-events:none\"";
 
@@ -1469,7 +2446,7 @@ function buildPATModal() {
       </tr></thead><tbody>`;
     data.forEach(row => {
       if (row.cat) {
-        html += `<tr><td colspan="7" style="background:#e8ecf5;font-weight:700;font-size:11px;padding:6px 10px;border:1px solid #d1d5db;color:#0d1526">⬛ ${row.cat}</td></tr>`;
+        html += `<tr><td colspan="7" style="background:#e8ecf5;font-weight:700;font-size:11px;padding:6px 10px;border:1px solid #d1d5db;color:#0d1526">--- ${row.cat}</td></tr>`;
       } else {
         const n = patRadioCounter++;
         html += `<tr>
@@ -1489,6 +2466,16 @@ function buildPATModal() {
     return html;
   }
 
+  // Add images container (will be populated separately)
+  const imagesContainer = document.createElement('div');
+  imagesContainer.id = 'pm-images-rendered';
+  wrap.appendChild(imagesContainer);
+  
+  // Populate images if this is an existing project
+  if (projectData && projectData.projectId) {
+    imagesContainer.innerHTML = renderProjectImages(projectData.projectId);
+  }
+
   wrap.innerHTML += sectionBand("Section 1: Fibre Duct & Civil Works");
   wrap.innerHTML += buildCheckTable(PAT_CHK1);
   wrap.innerHTML += sectionBand("Section 2: Cabinet, ODF, OFC, Splitter Box / PCC & Optical Testing");
@@ -1505,10 +2492,11 @@ function buildPATModal() {
       <th style="padding:6px 8px;border:1px solid #e2e4e9;width:75px">Variance</th>
       <th style="padding:6px 8px;border:1px solid #e2e4e9;width:95px">Remark</th>
     </tr></thead><tbody>`;
-  for(let i=1;i<=10;i++){
+  for(let i=1;i<=25;i++){
+    const defaultDesc = PAT_BOQ_ITEMS[i-1] || "";
     boq += `<tr style="${i%2?'':'background:#f9fafb'}">
       <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#9ca3af;font-size:11px">${i}</td>
-      <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-boq-desc" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Item description"${ro}></td>
+      <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-boq-desc" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" value="${defaultDesc}" placeholder="Item description"${ro}></td>
       <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-boq-scope" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="0"${ro}></td>
       <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-boq-inst" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="0"${ro}></td>
       <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-boq-var" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="0"${ro}></td>
@@ -1518,25 +2506,69 @@ function buildPATModal() {
   boq += `</tbody></table>`;
   wrap.innerHTML += boq;
 
-  // Snag List
-  wrap.innerHTML += `<div style="background:#e5342a;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px">Snag List — Any CR snag or total score ≥ 3 = AUTOMATIC FAIL</div>`;
+  // Snag List - NEW: One line per snag with department tracking
+  wrap.innerHTML += `<div style="background:#e5342a;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px">Snag List — Any CR snag or total score ≥ 3 = AUTOMATIC FAIL. <span style="font-weight:400">Only Snag List is editable in this document.</span></div>`;
+  
+  // Check if user can edit snags based on workflow and department
+  const canEditSnags = canEditCurrentProjectSnags();
+  const snagOnlyEditable = canEditSnags ? '' : 'readonly style="background:#f8fafc;cursor:not-allowed"';
+  
   let snag = `<table style="width:100%;border-collapse:collapse;font-size:12px"${roStyle}>
     <thead><tr style="background:#fff5f5;font-size:10px;text-transform:uppercase;color:#991b1b">
       <th style="padding:6px 8px;border:1px solid #fca5a5;width:30px">#</th>
       <th style="padding:6px 8px;border:1px solid #fca5a5">Snag Description</th>
-      <th style="padding:6px 8px;border:1px solid #fca5a5;width:65px">Weight</th>
-      <th style="padding:6px 8px;border:1px solid #fca5a5;width:110px">Clearance Date</th>
-      <th style="padding:6px 8px;border:1px solid #fca5a5;width:115px">Confirmed By</th>
+      <th style="padding:6px 8px;border:1px solid #fca5a5;width:60px">Weight</th>
+      <th style="padding:6px 8px;border:1px solid #fca5a5;width:120px">Department</th>
+      <th style="padding:6px 8px;border:1px solid #fca5a5;width:100px">Added By</th>
     </tr></thead><tbody>`;
-  for(let i=1;i<=7;i++){
-    snag += `<tr style="${i%2?'':'background:#fff5f5'}">
-      <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#9ca3af;font-size:11px">${i}</td>
-      <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-desc" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Describe snag"${ro}></td>
-      <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-wt" type="number" min="0" max="3" style="width:100%;border:none;outline:none;font-size:12px;text-align:center;font-family:inherit" placeholder="0" onchange="updatePATScore()"${ro}></td>
-      <td style="border:1px solid #e2e4e9;padding:3px 6px"><input type="date" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit"${ro}></td>
-      <td style="border:1px solid #e2e4e9;padding:3px 6px"><input style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Name"${ro}></td>
-    </tr>`;
+  
+  // If editing, show input fields for new snags
+  if (canEditSnags) {
+    for(let i=1;i<=7;i++){
+      snag += `<tr style="${i%2?'':'background:#fff5f5'}">
+        <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#9ca3af;font-size:11px">${i}</td>
+        <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-desc" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Describe snag..." onchange="updatePATScore()"></td>
+        <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-wt" type="number" min="0" max="3" style="width:100%;border:none;outline:none;font-size:12px;text-align:center;font-family:inherit" placeholder="0" onchange="updatePATScore()"></td>
+        <td style="border:1px solid #e2e4e9;padding:3px 6px;text-align:center;font-size:11px;">
+          <select class="pm-snag-dept" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit">
+            <option value="">Select Dept</option>
+            <option value="MEC">MEC</option>
+            <option value="Project Team">Project Team</option>
+            <option value="Planning Team">Planning Team</option>
+            <option value="Service Delivery">Service Delivery</option>
+          </select>
+        </td>
+        <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-addedby" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" placeholder="Your Name" value="${sessionStorage.getItem('sd_name')||''}"></td>
+      </tr>`;
+    }
+  } else {
+    // Read-only view - show existing snags with department info
+    const currentSnags = currentEditingProject && currentEditingProject.snags ? currentEditingProject.snags : [];
+    if (currentSnags.length === 0) {
+      snag += `<tr><td colspan="5" style="border:1px solid #e2e4e9;padding:12px;text-align:center;color:#8a90a0;font-size:11px">No snags recorded</td></tr>`;
+    } else {
+      currentSnags.forEach((snagItem, index) => {
+        snag += `<tr style="${index%2?'':'background:#fff5f5'}">
+          <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#9ca3af;font-size:11px">${index+1}</td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px;font-size:12px;">${snagItem.desc||'N/A'}</td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px;text-align:center;font-size:11px;">${snagItem.weight||0}</td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px;font-size:11px;">${snagItem.department||snagItem.addedByDept||'N/A'}</td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px;font-size:11px;">${snagItem.addedBy||'N/A'}</td>
+        </tr>`;
+      });
+      // Fill remaining rows if needed
+      for (let i = currentSnags.length; i < 7; i++) {
+        snag += `<tr style="${i%2?'':'background:#fff5f5'}">
+          <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#9ca3af;font-size:11px">${i+1}</td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-desc" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Describe snag" disabled></td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-wt" type="number" min="0" max="3" style="width:100%;border:none;outline:none;font-size:12px;text-align:center;font-family:inherit" placeholder="0" disabled></td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px"><input style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" placeholder="Dept" disabled></td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px"><input style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" placeholder="Name" disabled></td>
+        </tr>`;
+      }
+    }
   }
+  
   snag += `<tr style="background:#fff5f5;font-weight:700">
     <td colspan="2" style="border:1px solid #e2e4e9;text-align:right;padding:6px 10px;font-size:12px">Total Snag Score:</td>
     <td id="pm-snag-total" style="border:1px solid #e2e4e9;text-align:center;font-size:14px;font-weight:700;color:#e5342a">0</td>
@@ -1545,53 +2577,455 @@ function buildPATModal() {
   snag += `</tbody></table>`;
   wrap.innerHTML += snag;
 
-  // Signoff
-  wrap.innerHTML += sectionBand("Overall Acceptance Sign-off");
-  let sig = `<table style="width:100%;border-collapse:collapse;font-size:12px"${roStyle}>
-    <thead><tr style="background:#f8fafc;font-size:10px;text-transform:uppercase;color:#8a90a0">
-      <th style="padding:6px 10px;border:1px solid #e2e4e9">Team</th>
-      <th style="padding:6px 10px;border:1px solid #e2e4e9">Name</th>
-      <th style="padding:6px 10px;border:1px solid #e2e4e9">Company</th>
-      <th style="padding:6px 10px;border:1px solid #e2e4e9">Signature & Date</th>
-    </tr></thead><tbody>`;
-  PAT_SIGNOFF_TEAMS.forEach(t => {
-    sig += `<tr>
-      <td style="border:1px solid #e2e4e9;padding:7px 10px;font-weight:600;background:#f8fafc;font-size:12px">${t}</td>
-      <td style="border:1px solid #e2e4e9;padding:4px 6px"><input class="pm-sig-name" data-team="${t}" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Full name"${ro}></td>
-      <td style="border:1px solid #e2e4e9;padding:4px 6px"><input style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Company name"${ro}></td>
-      <td style="border:1px solid #e2e4e9;padding:4px 6px"><input type="date" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit"${ro}></td>
-    </tr>`;
-  });
-  sig += `</tbody></table>`;
-  wrap.innerHTML += sig;
-
-  // Verdict selector
-  wrap.innerHTML += sectionBand("Overall Verdict");
-  wrap.innerHTML += `<div style="display:flex"${roStyle}>
-    <div onclick="setPMVerdict('Fully Accepted',this)" class="pm-verdict-opt" style="flex:1;padding:12px;text-align:center;border:1px solid #e2e4e9;cursor:pointer;font-weight:600;font-size:13px;transition:.15s">✅ 1) Fully Accepted</div>
-    <div onclick="setPMVerdict('Partially Accepted',this)" class="pm-verdict-opt" style="flex:1;padding:12px;text-align:center;border:1px solid #e2e4e9;border-left:none;cursor:pointer;font-weight:600;font-size:13px;transition:.15s">⚠️ 2) Partially Accepted</div>
-    <div onclick="setPMVerdict('Rejected',this)" class="pm-verdict-opt" style="flex:1;padding:12px;text-align:center;border:1px solid #e2e4e9;border-left:none;cursor:pointer;font-weight:600;font-size:13px;transition:.15s">❌ 3) Rejected</div>
-  </div>`;
-
   document.getElementById("pm-date").valueAsDate = new Date();
 }
 
-function setPMVerdict(v, el) {
-  if (!_checkPATEditPermission()) return;
-  currentPMVerdict = v;
-  document.querySelectorAll(".pm-verdict-opt").forEach(e => {
-    e.style.background = ""; e.style.color = "";
+// Render project images in the PAT form
+function renderProjectImages(projectId) {
+  if (!projectId) return '';
+  const images = projectImages[projectId] || [];
+  
+  if (images.length === 0) {
+    return '<div style="background:#f8fafc;border:1px solid #e2e4e9;border-radius:10px;padding:12px;margin-bottom:16px">No images attached to this project.</div>';
+  }
+  
+  let html = '<div style="background:#f8fafc;border:1px solid #e2e4e9;border-radius:10px;padding:12px;margin-bottom:16px">';
+  html += '<div style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3faa;margin-bottom:10px">Project Images</div>';
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap">';
+  
+  images.forEach((img, index) => {
+    html += `
+      <div style="position:relative">
+        <img src="${img}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #e2e4e9;cursor:pointer" 
+             onclick="window.open(this.src, '_blank')" 
+             title="Click to view full size - Image ${index + 1}">
+        <button onclick="removeProjectImage('${projectId}', ${index})" 
+                style="position:absolute;top:4px;right:4px;background:#dc2626;color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center">X</button>
+        <div style="font-size:9px;color:#8a90a0;text-align:center;margin-top:4px">Image ${index + 1}</div>
+      </div>
+    `;
   });
-  el.style.background = "#0d1526";
-  el.style.color = "#fff";
-  const badge = document.getElementById("pm-verdict-badge");
-  badge.textContent = v;
-  if(v === "Fully Accepted"){ badge.style.background="#dcfce7"; badge.style.color="#166534"; }
-  else if(v === "Rejected"){ badge.style.background="#fee2e2"; badge.style.color="#991b1b"; }
-  else { badge.style.background="#fef9c3"; badge.style.color="#854d0e"; }
+  
+  html += '</div>';
+  html += `<div style="margin-top:10px;font-size:11px;color:#8a90a0">${images.length} image(s) attached</div>`;
+  html += '</div>';
+  
+  return html;
 }
 
-function updatePATScore() {
+// Remove an image from a project
+window.removeProjectImage = function(projectId, imageIndex) {
+  if (!projectImages[projectId] || !projectImages[projectId][imageIndex]) {
+    alert('Image not found.');
+    return;
+  }
+  
+  projectImages[projectId].splice(imageIndex, 1);
+  
+  // Re-render the form if open
+  if (currentEditingProject && currentEditingProject.projectId === projectId) {
+    const imageContainer = document.getElementById('pm-images-rendered');
+    if (imageContainer) {
+      imageContainer.innerHTML = renderProjectImages(projectId);
+    }
+  }
+  
+  alert(`[OK] Image ${imageIndex + 1} removed from project.`);
+};
+
+// Workflow Action Functions
+let currentPATAction = null;
+
+function selectPATAction(actionType) {
+  if (!_checkPATEditPermission()) {
+    alert('You do not have permission to perform workflow actions on this project.');
+    return;
+  }
+  
+  currentPATAction = actionType;
+  const workflowSection = document.getElementById('pm-workflow-section');
+  const actionDetails = document.getElementById('pm-action-details');
+  const previewDiv = document.getElementById('pm-workflow-preview');
+  
+  if (!workflowSection) return;
+  
+  // Reset styles
+  document.querySelectorAll('.pm-verdict-opt').forEach(opt => {
+    opt.style.background = '';
+    opt.style.color = '';
+  });
+  
+  // Highlight selected action
+  const opts = document.querySelectorAll('.pm-verdict-opt');
+  if (actionType === 'approve' && opts[0]) {
+    opts[0].style.background = '#dcfce7';
+    opts[0].style.color = '#166534';
+  } else if (actionType === 'partial' && opts[1]) {
+    opts[1].style.background = '#fef9c3';
+    opts[1].style.color = '#854d0e';
+  } else if (actionType === 'reject' && opts[2]) {
+    opts[2].style.background = '#fee2e2';
+    opts[2].style.color = '#991b1b';
+  }
+  
+  // Show workflow section
+  workflowSection.style.display = 'block';
+  
+  // Populate next recipient dropdown
+  const nextRecipientSelect = document.getElementById('pm-next-recipient');
+  if (nextRecipientSelect) {
+    nextRecipientSelect.innerHTML = '<option value="">-- Select person --</option>';
+    loadNextRecipients(actionType);
+  }
+  
+  // Show/hide details based on action
+  if (actionType === 'approve') {
+    actionDetails.style.display = 'block';
+    document.getElementById('pm-action-comments').placeholder = 'Comments for next team (optional)...';
+  } else {
+    actionDetails.style.display = 'block';
+    document.getElementById('pm-action-comments').placeholder = 'Comments/Reason (required)...';
+  }
+  
+  previewDiv.style.display = 'none';
+}
+
+function loadNextRecipients(actionType) {
+  if (!currentEditingProject) return;
+  
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const currentStatus = currentEditingProject.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  const nextRecipientSelect = document.getElementById('pm-next-recipient');
+  
+  if (!nextRecipientSelect) return;
+  
+  let targetDept = '';
+  
+  // Determine next department based on current department and action
+  // Per user requirements:
+  // - MECH can send to Project Team
+  // - Project Team can send to Planning Team or reject to MEC
+  // - Planning Team can send to Service Delivery or reject to MEC
+  // - Service Delivery can send to Final MEC Review or reject to MEC
+  if (myDept === 'mec' || myDept === 'mech') {
+    // MEC can only send to Project Team
+    targetDept = 'Project Team';
+  } else if (myDept === 'project team' || myDept.includes('project')) {
+    if (actionType === 'reject') {
+      targetDept = 'MEC';
+    } else {
+      targetDept = 'Planning Team';
+    }
+  } else if (myDept === 'planning team' || myDept.includes('planning')) {
+    if (actionType === 'reject') {
+      targetDept = 'MEC';
+    } else {
+      targetDept = 'Service Delivery';
+    }
+  } else if (myDept === 'service delivery' || myDept.includes('service')) {
+    if (actionType === 'reject') {
+      targetDept = 'MEC';
+    } else {
+      targetDept = 'MEC';
+    }
+  }
+  
+  // Load users from target department
+  gasCall('getUsersByDepartment', [targetDept], res => {
+    if (res.success && res.members && res.members.length > 0) {
+      res.members.forEach(member => {
+        const option = document.createElement('option');
+        option.value = member.email;
+        option.textContent = `${member.name} (${member.role})`;
+        nextRecipientSelect.appendChild(option);
+      });
+    } else {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = `No users found in ${targetDept}`;
+      option.disabled = true;
+      nextRecipientSelect.appendChild(option);
+    }
+    
+    updateWorkflowPreview();
+  });
+}
+
+function updateWorkflowPreview() {
+  const previewDiv = document.getElementById('pm-workflow-preview');
+  const recipientSelect = document.getElementById('pm-next-recipient');
+  
+  if (!previewDiv || !recipientSelect || !currentPATAction) {
+    if (previewDiv) previewDiv.style.display = 'none';
+    return;
+  }
+  
+  const selectedEmail = recipientSelect.value;
+  const actionText = {
+    'approve': 'Approve & Move to Next Stage',
+    'partial': 'Partial Approve & Move to Next Stage',
+    'reject': 'Reject & Return'
+  }[currentPATAction] || currentPATAction;
+  
+  if (selectedEmail) {
+    const selectedOption = recipientSelect.options[recipientSelect.selectedIndex];
+    const recipientName = selectedOption ? selectedOption.textContent.replace(/ \(.*\)/, '') : selectedEmail;
+    
+    previewDiv.style.display = 'block';
+    previewDiv.innerHTML = `<strong>Preview:</strong> ${actionText} to <strong>${recipientName}</strong> (${selectedEmail})`;
+  } else {
+    previewDiv.style.display = 'block';
+    previewDiv.innerHTML = `<strong>Preview:</strong> ${actionText}. Please select a recipient.`;
+  }
+}
+
+function cancelPATAction() {
+  currentPATAction = null;
+  const workflowSection = document.getElementById('pm-workflow-section');
+  const actionDetails = document.getElementById('pm-action-details');
+  const previewDiv = document.getElementById('pm-workflow-preview');
+  
+  if (workflowSection) workflowSection.style.display = 'none';
+  if (actionDetails) actionDetails.style.display = 'none';
+  if (previewDiv) previewDiv.style.display = 'none';
+  
+  // Reset styles
+  document.querySelectorAll('.pm-verdict-opt').forEach(opt => {
+    opt.style.background = '';
+    opt.style.color = '';
+  });
+  
+  document.getElementById('pm-next-recipient').innerHTML = '<option value="">-- Select person --</option>';
+  document.getElementById('pm-action-comments').value = '';
+}
+
+function submitPATAction() {
+  if (!currentPATAction || !currentEditingProject) {
+    alert('No action selected or no project loaded.');
+    return;
+  }
+  
+  const recipientSelect = document.getElementById('pm-next-recipient');
+  const commentsTextarea = document.getElementById('pm-action-comments');
+  const nextEmail = recipientSelect ? recipientSelect.value : '';
+  const comments = commentsTextarea ? commentsTextarea.value.trim() : '';
+  
+  if (!nextEmail) {
+    alert('Please select a recipient.');
+    return;
+  }
+  
+  // For Partial and Reject, comments are required
+  if ((currentPATAction === 'partial' || currentPATAction === 'reject') && !comments) {
+    alert('Comments are required for Partial Approve and Reject actions.');
+    return;
+  }
+  
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const projectId = currentEditingProject.projectId;
+  
+  // Get the selected user's name
+  const selectedOption = recipientSelect.options[recipientSelect.selectedIndex];
+  const recipientName = selectedOption ? selectedOption.textContent.replace(/ \(.*\)/, '') : nextEmail;
+  
+  // Determine target department for display
+  let targetDept = '';
+  if (myDept === 'mec' || myDept === 'mech') {
+    targetDept = 'Project Team';
+  } else if (myDept === 'project team' || myDept.includes('project')) {
+    targetDept = currentPATAction === 'reject' ? 'MEC' : 'Planning Team';
+  } else if (myDept === 'planning team' || myDept.includes('planning')) {
+    targetDept = currentPATAction === 'reject' ? 'MEC' : 'SD Team';
+  } else if (myDept === 'sd team' || myDept.includes('sd')) {
+    targetDept = 'MEC';
+  }
+  
+  // Call the backend to submit to next stage
+  gasCall('submitPATToNextStage', [projectId, nextEmail, comments], res => {
+    if (res.success) {
+      alert(`[OK] ${currentPATAction.toUpperCase()}: Project sent to ${recipientName} (${targetDept}). Comments: ${comments || 'None'}`);
+      cancelPATAction();
+      closePATModal();
+      loadPATProjects(true);
+    } else {
+      alert(`[FAIL] Error: ${res.message}`);
+    }
+  });
+}
+
+function updateWorkflowUI(project) {
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  const workflowStatus = project ? (project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT) : PAT_WORKFLOW_STATUS.DRAFT;
+  
+  // Update modal header
+  const deptLabel = document.getElementById('pat-modal-dept');
+  const titleLabel = document.getElementById('pat-modal-title');
+  
+  // Find stage info
+  const stageInfo = PAT_STAGE_FLOW.find(s => s.status === workflowStatus);
+  if (stageInfo) {
+    deptLabel.textContent = stageInfo.dept + " - " + stageInfo.label;
+    titleLabel.textContent = project ? project.projectName : "New PAT Project";
+  }
+  
+  // Show workflow status bar
+  const workflowBar = document.getElementById('workflow-status-bar');
+  const statusBadge = document.getElementById('current-workflow-status');
+  const assignedInfo = document.getElementById('assigned-to-info');
+  
+  workflowBar.style.display = project ? 'block' : 'none';
+  
+  if (project && project.workflowStatus) {
+    statusBadge.textContent = project.workflowStatus;
+    
+    // Set badge color based on status
+    const statusColors = {
+      'Draft': '#0d1526',
+      'Awaiting Project Team': '#1a3faa',
+      'Awaiting Planning Team': '#f59e0b',
+      'Awaiting Service Delivery': '#16a34a',
+      'Awaiting Final MEC Review': '#e5342a',
+      'Completed': '#166534',
+      'Rejected': '#dc2626'
+    };
+    statusBadge.style.background = statusColors[project.workflowStatus] || '#0d1526';
+    
+    // Show assigned info with source
+    if (project.assignedToName) {
+      // Check if there's workflow history to show where it came from
+      const history = project.workflowHistory || [];
+      const lastSubmission = history.length > 0 ? history[history.length - 1] : null;
+      let fromInfo = '';
+      if (lastSubmission && lastSubmission.fromStatus && lastSubmission.toStatus === workflowStatus) {
+        fromInfo = ` from <strong>${lastSubmission.by.name || project.submittedBy}</strong> (${lastSubmission.by.department || project.submittedByDept})`;
+      } else if (project.submittedBy && project.submittedBy !== project.assignedToName) {
+        fromInfo = ` from <strong>${project.submittedBy}</strong>`;
+      }
+      assignedInfo.innerHTML = `Assigned to: <strong>${project.assignedToName}</strong> (${project.assignedToDept})${fromInfo}`;
+    } else if (project.submittedBy) {
+      assignedInfo.innerHTML = `Created by: <strong>${project.submittedBy}</strong>`;
+    } else {
+      assignedInfo.innerHTML = '';
+    }
+  }
+  
+  // Show/hide workflow action section
+  const workflowSection = document.getElementById('pm-workflow-section');
+  if (workflowSection) {
+    // Check if current user can perform workflow actions on this project
+    const canPerformWorkflow = canEditCurrentProject();
+    workflowSection.style.display = canPerformWorkflow && project ? 'block' : 'none';
+  }
+  
+  // Update action buttons based on workflow status and user permissions
+  updateWorkflowActionButtons(workflowStatus, project);
+}
+
+function updateWorkflowActionButtons(workflowStatus, project) {
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  
+  // Hide all workflow buttons initially
+  document.getElementById('btn-save-draft').style.display = 'none';
+  document.getElementById('btn-submit-next').style.display = 'none';
+  document.getElementById('btn-final-approve').style.display = 'none';
+  document.getElementById('btn-reject').style.display = 'none';
+  
+  // Check permissions
+  const isAssignedToMe = project && project.assignedToEmail && 
+                        project.assignedToEmail.toLowerCase() === myEmail.toLowerCase();
+  const isMEC = myDept === 'mec' || myDept === 'mech';
+  const isAdmin = myRole === 'admin' || myRole === 'super admin';
+  const assignedDept = (project && project.assignedToDept || '').toLowerCase();
+  
+  // Determine which department currently owns this PAT
+  const getCurrentOwnerDept = () => {
+    switch(workflowStatus) {
+      case PAT_WORKFLOW_STATUS.DRAFT:
+      case PAT_WORKFLOW_STATUS.REJECTED:
+      case PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC:
+        return 'mec';
+      case PAT_WORKFLOW_STATUS.AWAITING_PROJECT:
+        return 'project team';
+      case PAT_WORKFLOW_STATUS.AWAITING_PLANNING:
+        return 'planning team';
+      case PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY:
+        return 'service delivery';
+      case PAT_WORKFLOW_STATUS.COMPLETED:
+        return ''; // No owner for completed
+      default:
+        return '';
+    }
+  };
+  
+  const currentOwnerDept = getCurrentOwnerDept();
+  const canEdit = isAdmin || isAssignedToMe || myDept === currentOwnerDept || (isMEC && currentOwnerDept === 'mec');
+  
+  if (!canEdit) return;
+  
+  // Show appropriate buttons based on status and ownership
+  switch(workflowStatus) {
+    case PAT_WORKFLOW_STATUS.DRAFT:
+      // MEC can save draft or submit to Project Team
+      if (isMEC || isAdmin) {
+        document.getElementById('btn-save-draft').style.display = 'inline-flex';
+        document.getElementById('btn-submit-next').style.display = 'inline-flex';
+      }
+      break;
+      
+    case PAT_WORKFLOW_STATUS.AWAITING_PROJECT:
+      // Only Project Team can edit (or admin)
+      if (myDept === 'project team' || isAssignedToMe || isAdmin) {
+        document.getElementById('btn-save-draft').style.display = 'inline-flex';
+        document.getElementById('btn-submit-next').style.display = 'inline-flex';
+        document.getElementById('btn-reject').style.display = 'inline-flex';
+      }
+      break;
+      
+    case PAT_WORKFLOW_STATUS.AWAITING_PLANNING:
+      // Only Planning Team can edit (or admin)
+      if (myDept === 'planning team' || isAssignedToMe || isAdmin) {
+        document.getElementById('btn-save-draft').style.display = 'inline-flex';
+        document.getElementById('btn-submit-next').style.display = 'inline-flex';
+        document.getElementById('btn-reject').style.display = 'inline-flex';
+      }
+      break;
+      
+    case PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY:
+      // Only Service Delivery can edit (or admin)
+      if (myDept === 'service delivery' || isAssignedToMe || isAdmin) {
+        document.getElementById('btn-save-draft').style.display = 'inline-flex';
+        document.getElementById('btn-submit-next').style.display = 'inline-flex';
+        document.getElementById('btn-reject').style.display = 'inline-flex';
+      }
+      break;
+      
+    case PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC:
+      // Only MEC can final approve or reject (or admin)
+      if (isMEC || isAdmin) {
+        document.getElementById('btn-final-approve').style.display = 'inline-flex';
+        document.getElementById('btn-reject').style.display = 'inline-flex';
+      }
+      break;
+      
+    case PAT_WORKFLOW_STATUS.REJECTED:
+      // MEC can edit and resubmit (or admin)
+      if (isMEC || isAdmin) {
+        document.getElementById('btn-save-draft').style.display = 'inline-flex';
+        document.getElementById('btn-submit-next').style.display = 'inline-flex';
+      }
+      break;
+      
+    default:
+      // Completed - no actions
+      break;
+  }
+}
+
+function updatePATScore(isWorkflowUpdate = false) {
   let score = 0, hasCR = false;
   document.querySelectorAll('#pm-checklist-wrap input[type=radio][value=nok]:checked').forEach(r => {
     score += _sevWeight(r.dataset.sev);
@@ -1606,16 +3040,16 @@ function updatePATScore() {
   const badge = document.getElementById("pm-verdict-badge");
   if(!currentPMVerdict) {
     if(hasCR || score >= 3){
-      badge.textContent = "⛔ FAIL"; badge.style.background="#fee2e2"; badge.style.color="#991b1b";
+      badge.textContent = "FAIL"; badge.style.background="#fee2e2"; badge.style.color="#991b1b";
     } else if(document.querySelectorAll('#pm-checklist-wrap input[type=radio]:checked').length > 0){
-      badge.textContent = "✅ PASS"; badge.style.background="#dcfce7"; badge.style.color="#166534";
+      badge.textContent = "PASS"; badge.style.background="#dcfce7"; badge.style.color="#166534";
     } else {
       badge.textContent = "Pending"; badge.style.background="#f1f5f9"; badge.style.color="#475569";
     }
   }
 }
 
-function openPATForm(isAISidePanel = false) {
+function openPATForm(isAISidePanel = false, projectData = null) {
   const formBody = document.getElementById("pat-form-body");
   const modalInner = document.querySelector("#pat-modal > div");
   const sidePanel = document.getElementById("ai-side-panel");
@@ -1632,13 +3066,37 @@ function openPATForm(isAISidePanel = false) {
     document.body.style.overflow = "hidden";
   }
   
-  buildPATModal();
+  // Store current project globally
+  currentEditingProject = projectData;
+  
+  buildPATModal(projectData);
+  
+  if (projectData) {
+      aiFillPATForm(projectData);
+      updateWorkflowUI(projectData);
+      // Load images for this project
+      const imagesContainer = document.getElementById('pm-images-rendered');
+      if (imagesContainer) {
+        imagesContainer.innerHTML = renderProjectImages(projectData.projectId);
+      }
+  } else {
+      // New project - set default workflow status
+      const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+      updateWorkflowUI({ workflowStatus: PAT_WORKFLOW_STATUS.DRAFT });
+      // Clear images for new project
+      const imagesContainer = document.getElementById('pm-images-rendered');
+      if (imagesContainer) {
+        imagesContainer.innerHTML = '<div style="background:#f8fafc;border:1px solid #e2e4e9;border-radius:10px;padding:12px;">No images attached. Upload images via AI chat with ADD_IMAGE_TO_PROJECT command.</div>';
+      }
+      // Reset workflow action
+      cancelPATAction();
+  }
 }
 
 function closePATModal() {
   document.getElementById("pat-modal").style.display = "none";
   document.body.style.overflow = "";
-  currentPMVerdict = "";
+  cancelPATAction();
 }
 
 function closeAISidePanel() {
@@ -1664,16 +3122,38 @@ function collectPATData() {
 
   const snagDescs = [...document.querySelectorAll('.pm-snag-desc')].map(i=>i.value);
   const snagWts   = [...document.querySelectorAll('.pm-snag-wt')].map(i=>i.value);
-  const snags = snagDescs.map((d,i)=>({desc:d,weight:snagWts[i]})).filter(r=>r.desc.trim());
+  const snagDepts = [...document.querySelectorAll('.pm-snag-dept')].map(i=>i.value);
+  const snagAddedBy = [...document.querySelectorAll('.pm-snag-addedby')].map(i=>i.value);
+  
+  // Create snags with department tracking
+  const snags = snagDescs.map((d,i)=>({
+    desc: d,
+    weight: parseInt(snagWts[i])||0,
+    department: snagDepts[i]||'',
+    addedBy: snagAddedBy[i]||'',
+    addedByEmail: sessionStorage.getItem('sd_email')||'',
+    addedAt: new Date().toISOString()
+  })).filter(r=>r.desc.trim());
 
-  const signoff = {};
-  document.querySelectorAll('.pm-sig-name').forEach(i=>{ if(i.value.trim()) signoff[i.dataset.team]=i.value.trim(); });
+  // Signoff is handled via the approval buttons now, we preserve existing signoff data
+  let signoff = {};
+  if (currentEditingProject && currentEditingProject.signoff) {
+      signoff = currentEditingProject.signoff;
+  }
 
   const score = parseInt(document.getElementById("pm-score").textContent)||0;
   let hasCR = false;
   document.querySelectorAll('#pm-checklist-wrap input[type=radio][value=nok]:checked').forEach(r=>{ if(r.dataset.sev==="CR") hasCR=true; });
 
+  // Get images for this project
+  const projectId = currentEditingProject ? currentEditingProject.projectId : "";
+  const images = projectImages[projectId] || [];
+  
+  // Auto-calculate status based on score
+  const autoStatus = (hasCR||score>=3) ? "Failed" : score===0 ? "Passed" : "Partial";
+  
   return {
+    projectId: projectId,
     projectName:     document.getElementById("pm-name").value.trim(),
     siteAddress:     document.getElementById("pm-address").value.trim(),
     lat:             document.getElementById("pm-lat").value.trim(),
@@ -1683,77 +3163,457 @@ function collectPATData() {
     vendor:          document.getElementById("pm-vendor").value.trim(),
     inspectionDate:  document.getElementById("pm-date").value,
     snagScore:       score,
-    verdict:         currentPMVerdict || (hasCR||score>=3?"Rejected":"Pending"),
-    status:          (hasCR||score>=3) ? "Failed" : score===0 ? "Passed" : "Partial",
-    checklist, boq, snags, signoff
+    status:          autoStatus,
+    checklist, boq, snags, signoff,
+    images: images // Array of base64 image strings
   };
 }
 
-function savePATForm() {
-  if (!_checkPATEditPermission()) {
-    alert('Only MEC department members can save PAT projects.');
-    return;
-  }
+function savePATForm(action = 'draft') {
   const data = collectPATData();
   if(!data.projectName){ alert("Project Name is required."); return; }
   if(!data.siteAddress){ alert("Site Address is required."); return; }
 
-  const saveBtn = document.querySelector('#pat-modal .btn-primary[onclick="savePATForm()"]');
-  if(saveBtn){ saveBtn.disabled=true; saveBtn.innerHTML='<i class="ti ti-loader"></i> Saving...'; }
+  const saveBtn = document.querySelector('#pat-form-body .btn-primary');
+  if(saveBtn) saveBtn.disabled=true;
 
   gasCall('savePATProject', [data], res => {
-    if(saveBtn){ saveBtn.disabled=false; saveBtn.innerHTML='<i class="ti ti-device-floppy"></i> Save Project'; }
     if(res.success){
-      alert('✅ Project saved successfully!\nProject ID: ' + res.projectId);
+      alert('[OK] Project saved successfully!');
+      // If this was a new project, update the current project ID
+      if (!currentEditingProject && res.projectId) {
+        currentEditingProject = { projectId: res.projectId, workflowStatus: PAT_WORKFLOW_STATUS.DRAFT };
+      }
       closePATModal();
-      loadPATProjects();
+      loadPATProjects(true); // Force refresh from sheet
     } else {
+      if(saveBtn) saveBtn.disabled=false;
       alert('Error saving project: ' + res.message);
     }
   });
 }
 
-function loadPATProjects() {
-  gasCall('getPATProjects', [], res => {
-    if(res.success){
-      allPATProjects = res.projects;
-      renderPATTable(res.projects);
+// ==================== NEW WORKFLOW FUNCTIONS ====================
+
+/**
+ * Open assignment modal to select who to assign to in next stage
+ */
+function openAssignModal() {
+  const project = currentEditingProject;
+  if (!project) {
+    alert("No project loaded for assignment.");
+    return;
+  }
+  
+  const currentStatus = project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  
+  // Get next stage users
+  gasCall('getNextStageUsers', [currentStatus], res => {
+    if (!res.success) {
+      alert("Error: " + res.message);
+      return;
+    }
+    
+    const modalContent = document.getElementById('assign-modal-content');
+    const nextDept = res.nextDept || "Unknown Department";
+    
+    let html = `
+      <div style="margin-bottom:16px">
+        <strong>Select who in <span style="color:#1a3faa">${nextDept}</span> should receive this PAT:</strong>
+      </div>
+      <div style="max-height:300px;overflow-y:auto;margin-bottom:16px">
+    `;
+    
+    if (res.members && res.members.length > 0) {
+      res.members.forEach(member => {
+        html += `
+          <div style="padding:10px;margin-bottom:8px;background:#f8fafc;border-radius:8px;border:1px solid #e2e4e9;cursor:pointer;transition:.15s" 
+               onclick="selectAssignee('${member.email}', '${member.name}', '${res.nextDept}')" onmouseover="this.style.borderColor='#1a3faa'" onmouseout="this.style.borderColor='#e2e4e9'">
+            <div style="font-weight:600;color:#0d1526">${member.name}</div>
+            <div style="font-size:12px;color:#8a90a0">${member.email}</div>
+            <div style="font-size:11px;color:#6b7280">${member.role} • ${member.department}</div>
+          </div>
+        `;
+      });
     } else {
-      document.getElementById("pat-list").innerHTML =
-        `<tr><td colspan="10" style="text-align:center;padding:40px;color:#e5342a">Error loading projects: ${res.message}</td></tr>`;
+      html += `<div style="padding:16px;text-align:center;color:#8a90a0">No users found in ${nextDept}</div>`;
+    }
+    
+    html += `
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="closeAssignModal()" style="padding:8px 16px;border:1px solid #e2e4e9;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">Cancel</button>
+      </div>
+    `;
+    
+    modalContent.innerHTML = html;
+    document.getElementById('assign-modal').style.display = 'flex';
+  });
+}
+
+/**
+ * Select assignee and submit to next stage
+ */
+function selectAssignee(email, name, nextDept) {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  const comments = prompt("Add any comments for the next team (optional):");
+  
+  gasCall('submitPATToNextStage', [
+    currentEditingProject.projectId,
+    email,
+    comments || ""
+  ], res => {
+    closeAssignModal();
+    if (res.success) {
+      alert(res.message);
+      closePATModal();
+      loadPATProjects(true); // Force refresh from sheet
+    } else {
+      alert("Error: " + res.message);
     }
   });
 }
 
-function renderPATTable(projects) {
-  const tbody = document.getElementById("pat-list");
-  const canEdit = _checkPATEditPermission();
-  if(!projects.length){
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:#8a90a0">No PAT projects found. ' + (canEdit ? 'Click "+ New PAT" to create one.' : 'View-only access.') + '</td></tr>';
+/**
+ * Close assignment modal
+ */
+function closeAssignModal() {
+  document.getElementById('assign-modal').style.display = 'none';
+}
+
+/**
+ * Final approve (MEC only) - completes the PAT
+ */
+function approveFinalPAT() {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
     return;
   }
+  
+  const comments = prompt("Add final approval comments (optional):");
+  
+  gasCall('approvePAT', [
+    currentEditingProject.projectId,
+    comments || ""
+  ], res => {
+    if (res.success) {
+      alert(res.message);
+      closePATModal();
+      loadPATProjects(true); // Force refresh from sheet
+    } else {
+      alert("Error: " + res.message);
+    }
+  });
+}
+
+/**
+ * Reject PAT with reason and send back to previous department
+ */
+function rejectPATWithReason() {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  const reason = prompt("REQUIRED: Reason for rejection (this will send the PAT back to the previous department):");
+  if (!reason || reason.trim() === "") {
+    alert("You must provide a reason for rejection.");
+    return;
+  }
+  
+  gasCall('rejectPATWithReason', [
+    currentEditingProject.projectId,
+    reason
+  ], res => {
+    if (res.success) {
+      alert(res.message);
+      closePATModal();
+      loadPATProjects(true); // Force refresh from sheet
+    } else {
+      alert("Error: " + res.message);
+    }
+  });
+}
+
+/**
+ * Partially approve PAT with comments
+ */
+function partiallyApprovePAT() {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  // Collect current snag data with department tracking
+  const snagDescs = [...document.querySelectorAll('.pm-snag-desc')].map(i=>i.value);
+  const snagWts   = [...document.querySelectorAll('.pm-snag-wt')].map(i=>i.value);
+  const snagDepts = [...document.querySelectorAll('.pm-snag-dept')].map(i=>i.value);
+  const snagAddedBy = [...document.querySelectorAll('.pm-snag-addedby')].map(i=>i.value);
+  
+  const newSnags = snagDescs.map((d,i)=>({
+    desc: d,
+    weight: parseInt(snagWts[i])||0,
+    department: snagDepts[i]||'',
+    addedBy: snagAddedBy[i]||'',
+    addedByEmail: sessionStorage.getItem('sd_email')||'',
+    addedAt: new Date().toISOString()
+  })).filter(r=>r.desc.trim());
+  
+  const comments = prompt("REQUIRED: Comments for partial approval (explain what needs to be addressed):");
+  if (!comments || comments.trim() === "") {
+    alert("You must provide comments for partial approval.");
+    return;
+  }
+  
+  gasCall('partiallyApprovePAT', [
+    currentEditingProject.projectId,
+    comments,
+    newSnags
+  ], res => {
+    if (res.success) {
+      alert(res.message + "\nVerdict: " + res.verdict + "\nSnag Score: " + res.snagScore);
+      closePATModal();
+      loadPATProjects(true); // Force refresh from sheet
+    } else {
+      alert("Error: " + res.message);
+    }
+  });
+}
+
+/**
+ * Submit to next department (select entire department)
+ */
+function submitToNextDepartment() {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  const currentStatus = currentEditingProject.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  
+  // Determine next department
+  let nextDept = "";
+  switch(currentStatus) {
+    case PAT_WORKFLOW_STATUS.DRAFT:
+    case PAT_WORKFLOW_STATUS.AWAITING_PROJECT:
+      nextDept = "Project Team";
+      break;
+    case PAT_WORKFLOW_STATUS.AWAITING_PLANNING:
+      nextDept = "Service Delivery";
+      break;
+    case PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY:
+      nextDept = "MEC";
+      break;
+    case PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC:
+      nextDept = "MEC";
+      break;
+    default:
+      alert("Cannot determine next department for current status: " + currentStatus);
+      return;
+  }
+  
+  const comments = prompt("Add any comments for the " + nextDept + " team (optional):");
+  
+  gasCall('submitPATToDepartment', [
+    currentEditingProject.projectId,
+    nextDept,
+    comments || ""
+  ], res => {
+    if (res.success) {
+      alert(res.message);
+      closePATModal();
+      loadPATProjects(true); // Force refresh from sheet
+    } else {
+      alert("Error: " + res.message);
+    }
+  });
+}
+
+/**
+ * Submit to everyone in next department
+ */
+function submitToAllInNextDepartment() {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  const currentStatus = currentEditingProject.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  
+  // Get next department users
+  gasCall('getNextStageUsers', [currentStatus], res => {
+    if (!res.success) {
+      alert("Error: " + res.message);
+      return;
+    }
+    
+    if (!res.members || res.members.length === 0) {
+      alert("No users found in " + res.nextDept);
+      return;
+    }
+    
+    const comments = prompt("Add any comments for the " + res.nextDept + " team (optional):");
+    
+    // Submit to first user in department (simplified for now)
+    // In a real implementation, you could create multiple assignments
+    const firstMember = res.members[0];
+    
+    gasCall('submitPATToNextStage', [
+      currentEditingProject.projectId,
+      firstMember.email,
+      comments || "Submitted to all " + res.nextDept + " members"
+    ], res2 => {
+      if (res2.success) {
+        alert(res2.message + "\nNote: This creates a notification for all " + res.members.length + " members in " + res.nextDept);
+        closePATModal();
+        loadPATProjects(true); // Force refresh from sheet
+      } else {
+        alert("Error: " + res2.message);
+      }
+    });
+  });
+}
+
+/**
+ * Show workflow history modal
+ */
+function showHistoryModal() {
+  if (!currentEditingProject || !currentEditingProject.workflowHistory) {
+    alert("No workflow history available.");
+    return;
+  }
+  
+  const history = currentEditingProject.workflowHistory;
+  if (!history || history.length === 0) {
+    alert("No workflow history available.");
+    return;
+  }
+  
+  let html = `<div style="max-height:400px;overflow-y:auto">`;
+  
+  history.forEach((entry, index) => {
+    const actionColor = {
+      'created': '#0d1526',
+      'submitted': '#1a3faa',
+      'approved': '#166534',
+      'rejected': '#dc2626'
+    };
+    const color = actionColor[entry.action] || '#0d1526';
+    const date = new Date(entry.timestamp).toLocaleString();
+    
+    html += `
+      <div style="padding:12px;margin-bottom:12px;background:#f8fafc;border-radius:8px;border-left:4px solid ${color}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <strong style="color:${color};font-size:13px">${entry.action.toUpperCase()}</strong>
+          <span style="font-size:11px;color:#8a90a0">${date}</span>
+        </div>
+        <div style="font-size:12px;color:#4a5568;margin-bottom:4px">
+          By: <strong>${entry.by.name}</strong> (${entry.by.department}) - ${entry.by.email}
+        </div>
+        ${entry.fromStatus ? `<div style="font-size:11px;color:#6b7280">From: ${entry.fromStatus} → To: ${entry.toStatus}</div>` : ''}
+        ${entry.comments ? `<div style="font-size:12px;color:#2d3656;margin-top:6px;padding:6px;background:#fff;border-radius:4px">${entry.comments}</div>` : ''}
+      </div>
+    `;
+  });
+  
+  html += `</div>`;
+  
+  document.getElementById('history-modal-content').innerHTML = html;
+  document.getElementById('history-modal').style.display = 'flex';
+}
+
+/**
+ * Close history modal
+ */
+function closeHistoryModal() {
+  document.getElementById('history-modal').style.display = 'none';
+}
+
+function loadPATProjects(forceRefresh = false) {
+  // If forcing refresh, bypass cache
+  if (forceRefresh) {
+    allPATProjects = []; // Clear cache to force fresh load
+  }
+  
+  gasCall('getPATProjects', [], res => {
+    if(res.success){
+      allPATProjects = res.projects;
+      // Always render table view
+      renderPATTable(res.projects);
+    } else {
+      // Show error in table view
+      document.getElementById("pat-list").innerHTML =
+        `<tr><td colspan="9" style="text-align:center;padding:40px;color:#e5342a">Error loading projects: ${res.message}</td></tr>`;
+    }
+  });
+}
+
+// Force refresh PAT projects from sheet (bypasses frontend cache)
+function forceRefreshPATProjects() {
+    loadPATProjects(true);
+}
+
+function renderPATTable(projects) {
+  const tbody = document.getElementById("pat-list");
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  const canCreate = (myDept === 'mec' || myDept === 'mech' || myRole === 'admin' || myRole === 'super admin');
+  
+  if(!projects.length){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#8a90a0">No PAT projects found. ' + (canCreate ? 'Click "+ New PAT" to create one.' : 'View-only access.') + '</td></tr>';
+    return;
+  }
+  
   tbody.innerHTML = projects.map(p => {
     const score = parseInt(p.snagScore)||0;
-    const scoreCss = score>=3 ? 'color:#dc2626;font-weight:700' : 'color:#166534;font-weight:700';
-    const vBg = p.verdict==='Fully Accepted'?'#dcfce7':p.verdict==='Rejected'?'#fee2e2':'#fef9c3';
-    const vCl = p.verdict==='Fully Accepted'?'#166534':p.verdict==='Rejected'?'#991b1b':'#854d0e';
+    const scoreCss = score>=3 ? 'color:#dc2626;font-weight:700' : score===0 ? 'color:#166534;font-weight:700' : 'color:#f59e0b;font-weight:700';
     const date = p.inspectionDate ? new Date(p.inspectionDate).toLocaleDateString('en-GB') : '—';
-    return `<tr>
-      <td><code style="background:#f0f4ff;padding:2px 7px;border-radius:4px;font-size:11px;color:#1a3faa">${p.projectId}</code></td>
-      <td><strong>${p.projectName}</strong></td>
-      <td style="font-size:12px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.siteAddress}</td>
-      <td>${p.phase||'—'}</td>
-      <td style="font-size:12px">${p.vendor||'—'}</td>
-      <td style="font-size:12px">${date}</td>
-      <td style="font-size:12px">${p.submittedBy}</td>
-      <td style="${scoreCss}">${score}</td>
-      <td><span class="status-pill" style="background:${vBg};color:${vCl}">${p.verdict||'Pending'}</span></td>
+    const shortAddress = (p.siteAddress || '').substring(0, 40) + (p.siteAddress && p.siteAddress.length > 40 ? '...' : '');
+    const shortName = (p.projectName || '').substring(0, 40) + (p.projectName && p.projectName.length > 40 ? '...' : '');
+    
+    // Workflow status colors - more compact display
+    const statusColors = {
+      'Draft': { bg: '#0d1526', color: '#fff', icon: 'DRFT' },
+      'Awaiting Project Team': { bg: '#e6f1fb', color: '#1a3faa', icon: 'PRJT' },
+      'Awaiting Planning Team': { bg: '#fef9c3', color: '#854d0e', icon: 'PLAN' },
+      'Awaiting Service Delivery': { bg: '#dcfce7', color: '#166534', icon: 'SDEL' },
+      'Awaiting Final MEC Review': { bg: '#fee2e2', color: '#991b1b', icon: 'FINAL' },
+      'Completed': { bg: '#dcfce7', color: '#166534', icon: 'DONE' },
+      'Rejected': { bg: '#fee2e2', color: '#991b1b', icon: 'REJ' }
+    };
+    const statusInfo = statusColors[p.workflowStatus] || { bg: '#f1f5f9', color: '#475569', icon: '⚪' };
+    
+    const assignedText = p.assignedToName ? `${p.assignedToName.substring(0, 20)}${p.assignedToName.length > 20 ? '...' : ''}` : 'Unassigned';
+    const vendorText = (p.vendor || '—').substring(0, 15) + ((p.vendor || '').length > 15 ? '...' : '');
+    
+    // Add source info for assigned projects
+    let sourceInfo = '';
+    if (p.assignedToName && p.submittedBy && p.submittedBy !== p.assignedToName) {
+      sourceInfo = `<br><small style="font-size:9px;color:#8a90a0">Sent from: ${p.submittedBy.substring(0, 15)}${p.submittedBy.length > 15 ? '...' : ''}</small>`;
+    }
+    
+    return `<tr onclick="viewPATProject('${p.projectId}')" style="cursor:pointer">
+      <td><code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;font-size:10px;color:#1a3faa">${p.projectId.replace('PAT-','FOB-')}</code></td>
+      <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.projectName}"><strong>${shortName}</strong></td>
+      <td style="font-size:11px;color:#6b7280;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.siteAddress}">${shortAddress}</td>
       <td>
-        <button class="btn-primary" style="padding:4px 10px;font-size:11px" onclick="viewPATProject('${p.projectId}')">
-          <i class="ti ti-eye"></i> View
+        <span class="status-pill" style="background:${statusInfo.bg};color:${statusInfo.color};padding:2px 8px;font-size:10px;border-radius:4px">${statusInfo.icon} ${p.workflowStatus}</span>
+        ${p.rejectionReason ? `<br><span style="font-size:9px;color:#dc2626">[REJ] ${(p.rejectionReason || '').toString().substring(0, 30)}...</span>` : ''}
+      </td>
+      <td style="font-size:11px" title="${p.assignedToName || 'Unassigned'} - ${p.assignedToDept || ''}">${assignedText}${sourceInfo}</td>
+      <td style="font-size:11px;color:#6b7280" title="${p.vendor || '—'}">${vendorText}</td>
+      <td style="font-size:11px;color:#6b7280">${date}</td>
+      <td style="${scoreCss};font-size:12px;text-align:center">${score}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn-primary" style="padding:3px 8px;font-size:10px" onclick="viewPATProject('${p.projectId}')" title="View Full Details">
+          <i class="ti ti-eye"></i>
         </button>
-        <button class="btn-primary" style="padding:4px 10px;font-size:11px;background:#166534" onclick="viewPATProject('${p.projectId}')">
-          <i class="ti ti-file-type-pdf"></i> PDF
+        <button class="btn-primary" style="padding:3px 8px;font-size:10px;background:#166534" onclick="viewPATProjectPDF('${p.projectId}')" title="Generate PDF">
+          <i class="ti ti-file-type-pdf"></i>
         </button>
       </td>
     </tr>`;
@@ -1761,96 +3621,390 @@ function renderPATTable(projects) {
 }
 
 function filterPATProjects() {
-  const q = document.getElementById("pat-search").value.toLowerCase().trim();
-  if(!q){ renderPATTable(allPATProjects); return; }
-  const filtered = allPATProjects.filter(p =>
-    (p.projectName||'').toLowerCase().includes(q) ||
-    (p.siteAddress||'').toLowerCase().includes(q) ||
-    (p.projectId||'').toLowerCase().includes(q) ||
-    (p.vendor||'').toLowerCase().includes(q) ||
-    (p.phase||'').toLowerCase().includes(q) ||
-    (p.submittedBy||'').toLowerCase().includes(q)
-  );
+  const searchQ = document.getElementById("pat-search").value.toLowerCase().trim();
+  const statusFilter = document.getElementById("pat-status-filter").value;
+  
+  let filtered = allPATProjects;
+  
+  // Filter by search query
+  if(searchQ){
+    filtered = filtered.filter(p =>
+      (p.projectName||'').toLowerCase().includes(searchQ) ||
+      (p.siteAddress||'').toLowerCase().includes(searchQ) ||
+      (p.projectId||'').toLowerCase().includes(searchQ) ||
+      (p.vendor||'').toLowerCase().includes(searchQ) ||
+      (p.phase||'').toLowerCase().includes(searchQ) ||
+      (p.submittedBy||'').toLowerCase().includes(searchQ) ||
+      (p.assignedToName||'').toLowerCase().includes(searchQ)
+    );
+  }
+  
+  // Filter by status
+  if(statusFilter){
+    filtered = filtered.filter(p => p.workflowStatus === statusFilter);
+  }
+  
+  // Always render table view
   renderPATTable(filtered);
+}
+
+
+
+function closeProjectQuickView() {
+  document.getElementById('project-quick-view').style.display = 'none';
+  cancelPATAction();
+}
+
+// Quick workflow actions from project quick view
+function quickApproveProject(projectId) {
+  closeProjectQuickView();
+  loadAndApproveProject(projectId, 'approve');
+}
+
+function quickPartialApproveProject(projectId) {
+  closeProjectQuickView();
+  loadAndApproveProject(projectId, 'partial');
+}
+
+function quickRejectProject(projectId) {
+  closeProjectQuickView();
+  loadAndApproveProject(projectId, 'reject');
+}
+
+function loadAndApproveProject(projectId, actionType) {
+  gasCall('getPATProjectById', [projectId], res => {
+    if (res.success) {
+      currentEditingProject = res.project;
+      openPATForm(false, currentEditingProject);
+      // Select the action after form loads
+      setTimeout(() => {
+        selectPATAction(actionType);
+      }, 100);
+    } else {
+      alert('Error loading project: ' + res.message);
+    }
+  });
+}
+
+function confirmDeleteProject(projectId) {
+  if (!confirm('Are you sure you want to PERMANENTLY delete this PAT project? This cannot be undone.')) {
+    return;
+  }
+  
+  
+  // Try multiple ID formats
+  const idVariations = [
+    projectId.replace('FOB-', 'PAT-'),
+    projectId,
+    projectId.replace('PAT-', 'PAT-')
+  ];
+  
+  let tryIndex = 0;
+  
+  function tryDelete() {
+    if (tryIndex >= idVariations.length) {
+      alert('[FAIL] Error deleting project: All ID formats failed');
+      return;
+    }
+    
+    gasCall('deletePATProject', [idVariations[tryIndex]], res => {
+      if (res.success) {
+        alert('[OK] Project deleted successfully!');
+        closeProjectQuickView();
+        loadPATProjects(true);
+      } else {
+        tryIndex++;
+        tryDelete();
+      }
+    });
+  }
+  
+  tryDelete();
 }
 
 function viewPATProject(projectId) {
   gasCall('getPATProjectById', [projectId], res => {
     if(res.success){
       const p = res.project;
-      const w = window.open('', '_blank');
+      currentEditingProject = p;
       
-      // Build checklist rows from the 70 items
+      // Show quick view modal with project details
+      showProjectQuickView(p);
+    } else {
+      alert('Error loading project: ' + res.message);
+    }
+  });
+}
+
+function showProjectQuickView(project) {
+  const statusColors = {
+    'Draft': { bg: '#0d1526', color: '#fff' },
+    'Awaiting Project Team': { bg: '#e6f1fb', color: '#1a3faa' },
+    'Awaiting Planning Team': { bg: '#fef9c3', color: '#854d0e' },
+    'Awaiting Service Delivery': { bg: '#dcfce7', color: '#166534' },
+    'Awaiting Final MEC Review': { bg: '#fee2e2', color: '#991b1b' },
+    'Completed': { bg: '#dcfce7', color: '#166534' },
+    'Rejected': { bg: '#fee2e2', color: '#991b1b' }
+  };
+  const statusInfo = statusColors[project.workflowStatus] || { bg: '#f1f5f9', color: '#475569' };
+  
+  const verdictColors = {
+    'Fully Accepted': { bg: '#dcfce7', color: '#166534' },
+    'Partially Accepted': { bg: '#fef9c3', color: '#854d0e' },
+    'Rejected': { bg: '#fee2e2', color: '#991b1b' },
+    'Pending': { bg: '#f1f5f9', color: '#475569' }
+  };
+  const verdictInfo = verdictColors[project.verdict] || { bg: '#f1f5f9', color: '#475569' };
+  
+  const date = project.inspectionDate ? new Date(project.inspectionDate).toLocaleDateString('en-GB') : '—';
+  const score = parseInt(project.snagScore) || 0;
+  const scoreColor = score >= 3 ? '#dc2626' : score === 0 ? '#166534' : '#f59e0b';
+  
+  // Count checklist items
+  const checklist = project.checklist || {};
+  const totalChecks = Object.keys(checklist).length;
+  const okCount = Object.values(checklist).filter(v => v === 'ok').length;
+  const nokCount = Object.values(checklist).filter(v => v === 'nok').length;
+  const naCount = Object.values(checklist).filter(v => v === 'na').length;
+  
+  // Count BOQ items
+  const boq = project.boq || [];
+  const boqTotal = boq.length;
+  const boqWithData = boq.filter(item => item.desc || item.scope || item.installed).length;
+  
+  // Count snags
+  const snags = project.snags || [];
+  const snagTotal = snags.length;
+  const activeSnags = snags.filter(s => s.desc).length;
+  
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <!-- Left Column: Basic Info -->
+      <div>
+        <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e4e9;margin-bottom:16px">
+          <h3 style="color:#0d1526;margin-bottom:12px;font-size:16px">Project Information</h3>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px">
+            <div style="color:#8a90a0">Project ID:</div>
+            <div><code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;color:#1a3faa">${project.projectId.replace('PAT-','FOB-')}</code></div>
+            
+            <div style="color:#8a90a0">Project Name:</div>
+            <div><strong>${project.projectName || '—'}</strong></div>
+            
+            <div style="color:#8a90a0">Phase:</div>
+            <div>${project.phase || '—'}</div>
+            
+            <div style="color:#8a90a0">Vendor:</div>
+            <div>${project.vendor || '—'}</div>
+            
+            <div style="color:#8a90a0">Work Description:</div>
+            <div>${project.workDescription || '—'}</div>
+            
+            <div style="color:#8a90a0">Department:</div>
+            <div>${project.department || '—'}</div>
+          </div>
+        </div>
+        
+        <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e4e9;margin-bottom:16px">
+          <h3 style="color:#0d1526;margin-bottom:12px;font-size:16px">Site Details</h3>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px">
+            <div style="color:#8a90a0">Address:</div>
+            <div>${project.siteAddress || '—'}</div>
+            
+            <div style="color:#8a90a0">Latitude:</div>
+            <div>${project.lat || '—'}</div>
+            
+            <div style="color:#8a90a0">Longitude:</div>
+            <div>${project.lon || '—'}</div>
+            
+            <div style="color:#8a90a0">Inspection Date:</div>
+            <div>${date}</div>
+          </div>
+        </div>
+        
+        <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e4e9">
+          <h3 style="color:#0d1526;margin-bottom:12px;font-size:16px">Assignment</h3>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px">
+            <div style="color:#8a90a0">Submitted By:</div>
+            <div><strong>${project.submittedBy || '—'}</strong> (${project.submittedByEmail || '—'})</div>
+            
+            <div style="color:#8a90a0">Assigned To:</div>
+            <div>${project.assignedToName ? `<strong>${project.assignedToName}</strong> (${project.assignedToDept})` : '—'}</div>
+            
+            <div style="color:#8a90a0">Workflow Status:</div>
+            <div><span class="status-pill" style="background:${statusInfo.bg};color:${statusInfo.color}">${project.workflowStatus}</span></div>
+            
+            ${project.rejectionReason ? `
+            <div style="color:#8a90a0">Rejection Reason:</div>
+            <div style="color:#dc2626"><i class="ti ti-alert-circle"></i> ${project.rejectionReason}</div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Column: Scores & Stats -->
+      <div>
+        <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e4e9;margin-bottom:16px">
+          <h3 style="color:#0d1526;margin-bottom:12px;font-size:16px">PAT Score & Verdict</h3>
+          <div style="text-align:center;padding:20px">
+            <div style="font-size:48px;font-weight:700;color:${scoreColor}">${score}</div>
+            <div style="font-size:14px;color:#6b7280;margin-top:4px">Snag Score</div>
+            <div style="margin-top:16px">
+              <span class="status-pill" style="background:${verdictInfo.bg};color:${verdictInfo.color};padding:8px 20px;font-size:14px;font-weight:600;border-radius:20px">
+                ${project.verdict || 'Pending'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e4e9;margin-bottom:16px">
+          <h3 style="color:#0d1526;margin-bottom:12px;font-size:16px">Checklist Summary</h3>
+          <div style="display:flex;justify-content:space-between;text-align:center">
+            <div style="padding:12px;background:#fff;border-radius:8px;border:1px solid #e2e4e9;flex:1;margin:0 4px">
+              <div style="font-size:24px;font-weight:700;color:#166534">${okCount}</div>
+              <div style="font-size:11px;color:#6b7280">OK</div>
+            </div>
+            <div style="padding:12px;background:#fff;border-radius:8px;border:1px solid #e2e4e9;flex:1;margin:0 4px">
+              <div style="font-size:24px;font-weight:700;color:#dc2626">${nokCount}</div>
+              <div style="font-size:11px;color:#6b7280">NOK</div>
+            </div>
+            <div style="padding:12px;background:#fff;border-radius:8px;border:1px solid #e2e4e9;flex:1;margin:0 4px">
+              <div style="font-size:24px;font-weight:700;color:#854d0e">${naCount}</div>
+              <div style="font-size:11px;color:#6b7280">NA</div>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:12px;font-size:12px;color:#6b7280">
+            ${totalChecks} items total
+          </div>
+        </div>
+        
+        <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid #e2e4e9">
+          <h3 style="color:#0d1526;margin-bottom:12px;font-size:16px">BOQ & Snags</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #e2e4e9">
+              <div style="font-size:11px;color:#6b7280">BOQ Items</div>
+              <div style="font-size:24px;font-weight:700;color:#1a3faa">${boqTotal}</div>
+              <div style="font-size:10px;color:#8a90a0">${boqWithData} with data</div>
+            </div>
+            <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #e2e4e9">
+              <div style="font-size:11px;color:#6b7280">Snags</div>
+              <div style="font-size:24px;font-weight:700;color:#e5342a">${activeSnags}</div>
+              <div style="font-size:10px;color:#8a90a0">${snagTotal} total</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div style="display:flex;gap:12px;justify-content:center;padding:16px;background:#f8fafc;border-radius:10px;border:1px solid #e2e4e9">
+      <button class="btn-primary" onclick="openPATForm(false, currentEditingProject); closeProjectQuickView()" style="padding:10px 24px">
+        <i class="ti ti-edit"></i> Edit Project
+      </button>
+      <button class="btn-primary" style="padding:10px 24px;background:#166534" onclick="viewPATProjectPDF('${project.projectId}')">
+        <i class="ti ti-file-type-pdf"></i> View PDF
+      </button>
+      ${project.workflowStatus === 'Draft' && (sessionStorage.getItem('sd_role') === 'admin' || sessionStorage.getItem('sd_role') === 'super admin' || sessionStorage.getItem('sd_department').toLowerCase() === 'mec') ? `
+        <button class="btn-primary" style="padding:10px 24px;background:#e5342a" onclick="confirmDeleteProject('${project.projectId}')">
+          <i class="ti ti-trash"></i> Delete
+        </button>
+      ` : ''}
+      ${canEditCurrentProject() ? `
+        <button class="btn-primary" style="padding:10px 24px;background:#166534" onclick="quickApproveProject('${project.projectId}')" title="Approve and move to next stage">
+          <i class="ti ti-check"></i> Approve
+        </button>
+        <button class="btn-primary" style="padding:10px 24px;background:#f59e0b" onclick="quickPartialApproveProject('${project.projectId}')" title="Partial approve and move to next stage">
+          <i class="ti ti-exclamation-circle"></i> Partial Approve
+        </button>
+        <button class="btn-primary" style="padding:10px 24px;background:#dc2626" onclick="quickRejectProject('${project.projectId}')" title="Reject and return">
+          <i class="ti ti-x"></i> Reject
+        </button>
+      ` : ''}
+      <button onclick="closeProjectQuickView()" style="padding:10px 24px;border:1px solid #e2e4e9;background:#fff;cursor:pointer;border-radius:8px">
+        Close
+      </button>
+    </div>
+  `;
+  
+  document.getElementById('project-quick-view-content').innerHTML = html;
+  document.getElementById('project-quick-view').style.display = 'flex';
+}
+
+// View PDF function for PAT projects
+function viewPATProjectPDF(projectId) {
+  // Create new window first
+  const w = window.open('', '_blank');
+  
+  if (!w || w.closed || typeof w.document == 'undefined') {
+    alert('Popup blocked. Please allow popups for this site to view PDFs.');
+    return;
+  }
+  
+  // Show loading in window
+  w.document.write('<html><head><title>Loading PDF...</title></head><body style="font-family:Arial;text-align:center;padding:50px">Loading PDF...<br><small>Please wait</small></body></html>');
+  
+  gasCall('getPATProjectById', [projectId], res => {
+    if(res.success){
+      const p = res.project;
+      
+      // Recalculate Checklist Rows
       const allItems = [...PAT_CHK1, ...PAT_CHK2];
-      let chkRows = '';
-      let idx = 0;
+      let chkRows = '', idx = 0;
       allItems.forEach(row => {
         if (row.cat) {
-          chkRows += `<tr><td colspan="7" style="background:#e8ecf5;font-weight:700;font-size:10px;padding:5px 8px;border:1px solid #000;color:#0d1526;text-transform:uppercase;letter-spacing:0.05em">⬛ ${row.cat}</td></tr>`;
+          chkRows += `<tr><td colspan="7" style="background:#e8ecf5;font-weight:700;font-size:10px;padding:5px 8px;border:1px solid #000;">--- ${row.cat}</td></tr>`;
         } else {
           const val = (p.checklist && p.checklist['pmchk'+idx]) || '';
-          const okBox = val === 'ok' ? '☑' : '☐';
-          const nokBox = val === 'nok' ? '☑' : '☐';
-          const naBox = val === 'na' ? '☑' : '☐';
-          const sevColor = row.sev === 'CR' ? '#fee2e2' : row.sev === 'MJ' ? '#fef9c3' : '#dbeafe';
-          const sevText = row.sev === 'CR' ? '#991b1b' : row.sev === 'MJ' ? '#854d0e' : '#1e40af';
-          
           chkRows += `<tr>
-            <td style="border:1px solid #000;padding:4px 6px;text-align:center;font-size:9px;font-weight:700;width:30px"><span style="background:${sevColor};color:${sevText};padding:1px 4px;border-radius:2px">${row.sev}</span></td>
-            <td style="border:1px solid #000;padding:4px 6px;font-size:10px;line-height:1.3">#${idx} ${row.item}</td>
-            <td style="border:1px solid #000;padding:4px;text-align:center;font-size:11px;width:28px">${okBox}</td>
-            <td style="border:1px solid #000;padding:4px;text-align:center;font-size:11px;width:28px">${nokBox}</td>
-            <td style="border:1px solid #000;padding:4px;text-align:center;font-size:11px;width:28px">${naBox}</td>
-            <td style="border:1px solid #000;padding:4px 6px;font-size:9px;color:#666;min-width:100px"></td>
-            <td style="border:1px solid #000;padding:4px 6px;font-size:9px;color:#666;min-width:60px"></td>
+            <td style="border:1px solid #000;text-align:center;font-size:9px;">${row.sev}</td>
+            <td style="border:1px solid #000;padding:4px 6px;font-size:10px;">#${idx} ${row.item}</td>
+            <td style="border:1px solid #000;text-align:center;font-size:11px;">${val === 'ok' ? 'OK' : ''}</td>
+            <td style="border:1px solid #000;text-align:center;font-size:11px;">${val === 'nok' ? 'NOK' : ''}</td>
+            <td style="border:1px solid #000;text-align:center;font-size:11px;">${val === 'na' ? 'NA' : ''}</td>
+            <td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td>
           </tr>`;
           idx++;
         }
       });
 
-      // Build BOQ rows
       let boqRows = '';
-      const boqData = p.boq && p.boq.length ? p.boq : [];
-      for(let i=0; i<10; i++) {
-        const item = boqData[i] || {};
-        boqRows += `<tr style="${i%2===0?'':'background:#f9fafb'}">
-          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:25px">${i+1}</td>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:9px">${item.desc || ''}</td>
-          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:80px">${item.scope || ''}</td>
-          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:80px">${item.installed || ''}</td>
-          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:60px">${item.variance || ''}</td>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:9px;width:80px">${item.remark || ''}</td>
+      const boqData = p.boq || [];
+      for(let i=0; i<Math.max(boqData.length, 25); i++) {
+        const item = boqData[i] || {desc: PAT_BOQ_ITEMS[i] || ''};
+        boqRows += `<tr>
+          <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+          <td style="border:1px solid #000;">${item.desc}</td>
+          <td style="border:1px solid #000;text-align:center;">${item.scope || ''}</td>
+          <td style="border:1px solid #000;text-align:center;">${item.installed || ''}</td>
+          <td style="border:1px solid #000;text-align:center;">${item.variance || ''}</td>
+          <td style="border:1px solid #000;">${item.remark || ''}</td>
         </tr>`;
       }
 
-      // Build Snag rows
       let snagRows = '';
-      const snagData = p.snags && p.snags.length ? p.snags : [];
+      const snagData = p.snags || [];
       for(let i=0; i<7; i++) {
         const item = snagData[i] || {};
-        snagRows += `<tr style="${i%2===0?'':'background:#fff5f5'}">
-          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:25px">${i+1}</td>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:9px">${item.desc || ''}</td>
-          <td style="border:1px solid #000;padding:3px 6px;text-align:center;font-size:9px;width:50px;font-weight:700">${item.weight || ''}</td>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:9px;width:80px"></td>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:9px;width:80px"></td>
+        snagRows += `<tr>
+          <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+          <td style="border:1px solid #000;">${item.desc || ''}</td>
+          <td style="border:1px solid #000;text-align:center;font-weight:700;">${item.weight || ''}</td>
+          <td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td>
         </tr>`;
       }
       snagRows += `<tr style="background:#fff5f5;font-weight:700">
-        <td colspan="2" style="border:1px solid #000;text-align:right;padding:4px 8px;font-size:10px">Total Snag Score:</td>
-        <td style="border:1px solid #000;text-align:center;font-size:12px;font-weight:700;color:#e5342a">${p.snagScore || 0}</td>
+        <td colspan="2" style="border:1px solid #000;text-align:right;padding:4px 8px;">Total Snag Score:</td>
+        <td style="border:1px solid #000;text-align:center;font-size:12px;color:#e5342a">${p.snagScore || 0}</td>
         <td colspan="2" style="border:1px solid #000"></td>
       </tr>`;
 
-      // Build Sign-off rows
       let sigRows = '';
       PAT_SIGNOFF_TEAMS.forEach(t => {
-        const name = (p.signoff && p.signoff[t]) || '';
+        const s = (p.signoff && p.signoff[t]) || {};
         sigRows += `<tr>
-          <td style="border:1px solid #000;padding:5px 8px;font-weight:600;background:#f8fafc;font-size:10px;width:100px">${t}</td>
-          <td style="border:1px solid #000;padding:4px 6px;font-size:10px;height:28px">${name}</td>
-          <td style="border:1px solid #000;padding:4px 6px;font-size:10px;height:28px"></td>
-          <td style="border:1px solid #000;padding:4px 6px;font-size:10px;height:28px;width:120px"></td>
+          <td style="border:1px solid #000;font-weight:600;background:#f8fafc;">${t}</td>
+          <td style="border:1px solid #000;">${s.name || (s.approved ? 'Approved' : '')}</td>
+          <td style="border:1px solid #000;">${s.approved ? 'FiberOne Broadband' : ''}</td>
+          <td style="border:1px solid #000;font-size:9px;">${s.date || ''} ${s.remark ? '<br>Note: ' + s.remark : ''}</td>
         </tr>`;
       });
 
@@ -1879,19 +4033,21 @@ td,th{border:1px solid #000;padding:4px 6px;vertical-align:top}
 .verdict-box{margin-top:8px;border:1px solid #000;padding:8px;text-align:center;font-size:11px;font-weight:700}
 </style>
 </head>
-<body>
+<body onload="window.print()">
 <div class="no-print" style="text-align:center;margin-bottom:10px">
-  <button onclick="window.print()" style="background:#1a3faa;color:#fff;border:none;padding:10px 24px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨 Print / Save as PDF</button>
+  <button onclick="window.print()" style="background:#1a3faa;color:#fff;border:none;padding:10px 24px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600"> Print / Save as PDF</button>
   <button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:8px">Close</button>
 </div>
 <div class="header">
-  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px">
-    <div style="text-align:left">
-      <div style="font-size:11px;font-weight:700;color:#1a3faa">FIBERONE BROADBAND LIMITED</div>
-      <div style="font-size:8px;color:#666">Fiber work _FTTH_Acceptance Test Document | Ref.No: FOB/TECH/MEC/FRM 005 Rev.2.0</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:15px;margin-bottom:6px">
+    <img src="https://fob.ng/wp-content/uploads/2025/08/fiberone-logo1.png" style="height:45px; width:auto;" alt="FiberOne Logo">
+    <div style="text-align:left; border-left: 1.5px solid #1a3faa; padding-left: 10px;">
+      <div style="font-size:11px;font-weight:700;color:#1a3faa">FIBERONE BROADBAND</div>
+      <div style="font-size:8px;color:#666">Fiber work _FTTH_AcceptabilityZ Test Document</div>
+      <div style="font-size:8px;color:#666">Ref.No: FOB/TECH/MEC/FRM 005 Rev.2.0</div>
     </div>
   </div>
-  <h1>Picture Panorama / Acceptance Test Document</h1>
+  <h1>PROVISIONAL ACCEPTABILITY TEST DOCUMENT</h1>
 </div>
 <table class="site-info" style="margin-bottom:6px">
   <tr><td>Project ID:</td><td>${p.projectId}</td><td>Date of Visit:</td><td>${p.inspectionDate || ''}</td></tr>
@@ -1915,9 +4071,9 @@ td,th{border:1px solid #000;padding:4px 6px;vertical-align:top}
 <div style="background:#0d1526;color:#fff;font-weight:700;font-size:10px;text-transform:uppercase;padding:5px 8px;border:1px solid #000">Sign-off</div>
 <table style="margin-bottom:8px"><thead><tr style="background:#f8fafc"><th style="width:100px">Team</th><th>NAME</th><th>COMPANY</th><th style="width:120px">Sign & Date</th></tr></thead><tbody>${sigRows}</tbody></table>
 <div class="verdict-box">
-  <span style="margin-right:20px">${vNum === '1)' ? '☑' : '☐'} 1) Fully accepted</span>
-  <span style="margin-right:20px">${vNum === '2)' ? '☑' : '☐'} 2) Partially accepted</span>
-  <span>${vNum === '3)' ? '☑' : '☐'} 3) Rejected</span>
+  <span style="margin-right:20px">${vNum === '1)' ? '[X]' : '[ ]'} 1) Fully accepted</span>
+  <span style="margin-right:20px">${vNum === '2)' ? '[X]' : '[ ]'} 2) Partially accepted</span>
+  <span>${vNum === '3)' ? '[X]' : '[ ]'} 3) Rejected</span>
   <div style="margin-top:4px;font-size:9px;font-weight:400;color:#666">Verdict: ${vText}</div>
 </div>
 <div style="background:#0d1526;color:#fff;font-weight:700;font-size:10px;text-transform:uppercase;padding:5px 8px;border:1px solid #000;margin-top:8px">Picture Panorama</div>
@@ -1935,11 +4091,401 @@ td,th{border:1px solid #000;padding:4px 6px;vertical-align:top}
 
 // Load PAT projects when tab is clicked
 document.querySelector('[data-target="pat-projects"]').addEventListener('click', () => {
-  loadPATProjects();
+  loadPATProjects(true); // Force refresh from sheet
   // Update New PAT button visibility based on permissions
-  const canEdit = _checkPATEditPermission();
-  const newBtn = document.querySelector('#pat-projects .btn-primary[onclick="openPATForm()"]');
-  if(newBtn) newBtn.style.display = canEdit ? 'inline-flex' : 'none';
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  const canCreate = (myDept === 'mec' || myDept === 'mech' || myRole === 'admin' || myRole === 'super admin');
+  const newBtn = document.getElementById('new-pat-btn');
+  if(newBtn) newBtn.style.display = canCreate ? 'inline-flex' : 'none';
+  // Always use table view
+  renderPATTable(allPATProjects);
+});
+
+// ============================================
+// IDRIS DASHBOARD FUNCTIONS
+// Special dashboard for idris.adeleke@fob.ng
+// ============================================
+
+let allIdrisPATs = [];
+let sharedDashboardData = null;
+
+/**
+ * Check if current user has access to shared Idris dashboard
+ */
+function checkSharedDashboardAccess(callback) {
+  if (isIdrisUser()) {
+    if (callback) callback(false);
+    return false;
+  }
+  
+  gasCall('getSharedDashboard', [], res => {
+    if (res.success && res.shared) {
+      sharedDashboardData = res;
+      if (callback) callback(true);
+      return true;
+    }
+    if (callback) callback(false);
+    return false;
+  });
+  return false;
+}
+
+/**
+ * Load shared dashboard if user has access
+ */
+function loadSharedDashboard() {
+  if (!sharedDashboardData) {
+    alert('No shared dashboard access found.');
+    return;
+  }
+  
+  // Show the Idris dashboard with shared data
+  allIdrisPATs = sharedDashboardData.analytics.projects || [];
+  renderIdrisDashboard(sharedDashboardData.analytics);
+  
+  // Update the header to show it's shared
+  const welcomeHeader = document.querySelector('#idris-dashboard .section-card > div:first-child');
+  if (welcomeHeader) {
+    welcomeHeader.innerHTML = `
+      <h2 style="margin:0;font-size:24px;font-weight:700">Shared Dashboard</h2>
+      <p style="margin:10px 0 0 0;opacity:0.9;font-size:14px">Viewing Idris Adeleke's dashboard (Shared until: ${new Date(sharedDashboardData.expiresAt).toLocaleString()})</p>
+    `;
+  }
+  
+  // Switch to Idris dashboard tab
+  document.querySelector('[data-target="idris-dashboard"]').click();
+}
+
+/**
+ * Check if current user is Idris Adeleke
+ */
+function isIdrisUser() {
+  const email = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+  return email === 'idris.adeleke@fob.ng';
+}
+
+/**
+ * Initialize Idris Dashboard
+ */
+function initIdrisDashboard() {
+  const idrisTab = document.getElementById('idris-dashboard-tab');
+  if (idrisTab) {
+    // Show tab for Idris or if user has shared access
+    if (isIdrisUser()) {
+      idrisTab.style.display = 'flex';
+    } else {
+      // Check for shared access
+      checkSharedDashboardAccess(hasAccess => {
+        if (hasAccess) {
+          idrisTab.style.display = 'flex';
+        }
+      });
+    }
+  }
+}
+
+/**
+ * Load Idris Dashboard with PAT analytics
+ */
+function loadIdrisDashboard(forceRefresh = false) {
+  gasCall('getPATAnalyticsForIdris', [forceRefresh], res => {
+    if (res.success) {
+      allIdrisPATs = res.analytics.projects || [];
+      renderIdrisDashboard(res.analytics);
+    } else {
+      alert('Error loading dashboard: ' + res.message);
+    }
+  });
+}
+
+/**
+ * Render Idris Dashboard with analytics data
+ */
+function renderIdrisDashboard(analytics) {
+  // Update summary stats
+  document.getElementById('idris-total-pat').textContent = analytics.total || 0;
+  document.getElementById('idris-completed').textContent = analytics.byStatus['Completed'] || 0;
+  
+  // Calculate pending (all except completed and rejected)
+  const pending = analytics.total - (analytics.byStatus['Completed'] || 0) - (analytics.byStatus['Rejected'] || 0);
+  document.getElementById('idris-pending').textContent = pending;
+  document.getElementById('idris-rejected').textContent = analytics.byStatus['Rejected'] || 0;
+  
+  // Update workflow efficiency
+  document.getElementById('idris-completion-rate').textContent = analytics.workflowEfficiency.completionRate || '0%';
+  document.getElementById('idris-avg-time').textContent = analytics.workflowEfficiency.averageCompletionTime || 'N/A';
+  document.getElementById('idris-rejection-rate').textContent = analytics.workflowEfficiency.rejectionRate || '0%';
+  
+  // Render full PAT table
+  renderIdrisPATTable(analytics.projects || []);
+}
+
+/**
+ * Render full PAT table for Idris dashboard
+ */
+function renderIdrisPATTable(projects) {
+  const tbody = document.getElementById('idris-pat-list');
+  if (!tbody) return;
+  
+  if (!projects.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:#8a90a0">No PAT projects found</td></tr>';
+    return;
+  }
+  
+  // Define workflow stages with colors
+  const workflowStages = [
+    { status: 'Draft', dept: 'MEC', color: '#0d1526' },
+    { status: 'Awaiting Project Team', dept: 'Project Team', color: '#1a3faa' },
+    { status: 'Awaiting Planning Team', dept: 'Planning Team', color: '#854d0e' },
+    { status: 'Awaiting Service Delivery', dept: 'Service Delivery', color: '#166534' },
+    { status: 'Awaiting Final MEC Review', dept: 'MEC', color: '#991b1b' },
+    { status: 'Completed', dept: 'MEC', color: '#166534' },
+    { status: 'Rejected', dept: 'MEC', color: '#dc2626' }
+  ];
+  
+  // Get stage index for each status
+  const getStageIndex = (status) => {
+    for (let i = 0; i < workflowStages.length; i++) {
+      if (workflowStages[i].status === status) return i;
+    }
+    return 0;
+  };
+  
+  // Get current stage and next stages for path display
+  const getProjectPath = (project) => {
+    const currentStatus = project.workflowStatus || 'Draft';
+    const currentIndex = getStageIndex(currentStatus);
+    const stagesPassed = workflowStages.slice(0, currentIndex + 1);
+    const stagesRemaining = workflowStages.slice(currentIndex + 1);
+    
+    return {
+      current: currentStatus,
+      currentIndex: currentIndex,
+      passed: stagesPassed,
+      remaining: stagesRemaining,
+      totalStages: workflowStages.length
+    };
+  };
+  
+  tbody.innerHTML = projects.map(p => {
+    const pathInfo = getProjectPath(p);
+    const score = parseInt(p.snagScore) || 0;
+    const scoreCss = score >= 3 ? 'color:#dc2626;font-weight:700' : score === 0 ? 'color:#166534;font-weight:700' : 'color:#f59e0b;font-weight:700';
+    const date = p.inspectionDate ? new Date(p.inspectionDate).toLocaleDateString('en-GB') : p.submittedAt ? new Date(p.submittedAt).toLocaleDateString('en-GB') : '—';
+    const shortAddress = (p.siteAddress || '').substring(0, 30) + (p.siteAddress && p.siteAddress.length > 30 ? '...' : '');
+    const shortName = (p.projectName || '').substring(0, 30) + (p.projectName && p.projectName.length > 30 ? '...' : '');
+    const currentDept = p.assignedToDept || p.department || 'MEC';
+    
+    // Create path display
+    const pathDisplay = workflowStages.map((stage, index) => {
+      const isPassed = index <= pathInfo.currentIndex;
+      const isCurrent = index === pathInfo.currentIndex;
+      const color = isCurrent ? stage.color : (isPassed ? '#166534' : '#e2e4e9');
+      const symbol = isCurrent ? '→' : (isPassed ? '✓' : '○');
+      return `<span style="margin:0 2px;color:${color};font-size:12px" title="${stage.status}">${symbol}</span>`;
+    }).join('');
+    
+    // Progress percentage
+    const progress = Math.round(((pathInfo.currentIndex + 1) / workflowStages.length) * 100);
+    
+    return `
+      <tr style="cursor:pointer" onclick="viewIdrisPATPath('${p.projectId}')">
+        <td><code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;font-size:10px;color:#1a3faa">${(p.projectId || '').replace('PAT-', 'FOB-')}</code></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.projectName}">${shortName}</td>
+        <td style="font-size:11px;color:#6b7280;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.siteAddress}">${shortAddress}</td>
+        <td>
+          <span class="status-pill" style="background:#0d1526;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px">${p.workflowStatus}</span>
+        </td>
+        <td style="font-size:11px">${currentDept}</td>
+        <td style="font-size:11px;color:#6b7280">${p.submittedBy || '—'}</td>
+        <td style="font-size:11px;color:#6b7280">${date}</td>
+        <td style="${scoreCss};font-size:12px;text-align:center">${score}</td>
+        <td style="font-size:11px">
+          <div style="display:flex;align-items:center;gap:4px">
+            ${pathDisplay}
+          </div>
+          <div style="font-size:9px;color:#8a90a0;margin-top:2px">${progress}% complete</div>
+        </td>
+        <td onclick="event.stopPropagation()">
+          <button class="btn-primary" style="padding:3px 8px;font-size:10px" onclick="viewIdrisPATPath('${p.projectId}')" title="View Path">
+            <i class="ti ti-route"></i>
+          </button>
+          <button class="btn-primary" style="padding:3px 8px;font-size:10px;background:#1a3faa" onclick="viewPATProject('${p.projectId}')" title="View Details">
+            <i class="ti ti-eye"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/**
+ * View PAT workflow path for Idris dashboard
+ */
+function viewIdrisPATPath(projectId) {
+  const project = allIdrisPATs.find(p => p.projectId === projectId);
+  if (!project) {
+    alert('Project not found');
+    return;
+  }
+  
+  // Get path data
+  const workflowStages = [
+    { status: 'Draft', dept: 'MEC', color: '#0d1526', icon: 'DRFT' },
+    { status: 'Awaiting Project Team', dept: 'Project Team', color: '#1a3faa', icon: 'PRJT' },
+    { status: 'Awaiting Planning Team', dept: 'Planning Team', color: '#854d0e', icon: 'PLAN' },
+    { status: 'Awaiting Service Delivery', dept: 'Service Delivery', color: '#166534', icon: 'SDEL' },
+    { status: 'Awaiting Final MEC Review', dept: 'MEC', color: '#991b1b', icon: 'FINAL' },
+    { status: 'Completed', dept: 'MEC', color: '#166534', icon: 'DONE' }
+  ];
+  
+  const currentStatus = project.workflowStatus || 'Draft';
+  const currentIndex = workflowStages.findIndex(s => s.status === currentStatus);
+  
+  let html = `
+    <div style="margin-bottom:20px">
+      <h3 style="font-size:16px;font-weight:700;color:#0d1526;margin-bottom:10px">${project.projectName}</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-bottom:20px">
+        <div style="background:#f8fafc;border-radius:8px;padding:12px">
+          <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em">Project ID</div>
+          <div style="font-size:14px;font-weight:600;color:#0d1526"><code>${(project.projectId || '').replace('PAT-', 'FOB-')}</code></div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:12px">
+          <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em">Current Status</div>
+          <div style="font-size:14px;font-weight:600;color:${workflowStages[currentIndex]?.color || '#0d1526'}">${currentStatus}</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:12px">
+          <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em">Snag Score</div>
+          <div style="font-size:14px;font-weight:600;color:${project.snagScore >= 3 ? '#dc2626' : '#166534'}">${project.snagScore || 0}</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:12px">
+          <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em">Submitted By</div>
+          <div style="font-size:14px;font-weight:600;color:#0d1526">${project.submittedBy || '—'}</div>
+        </div>
+      </div>
+    </div>
+    
+    <div style="background:#f8fafc;border-radius:8px;padding:20px;margin-bottom:20px">
+      <h4 style="font-size:13px;font-weight:600;color:#0d1526;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em">Workflow Path</h4>
+      <div style="display:flex;flex-direction:column;gap:8px">
+  `;
+  
+  // Add each stage
+  workflowStages.forEach((stage, index) => {
+    const isPassed = index < currentIndex;
+    const isCurrent = index === currentIndex;
+    const isUpcoming = index > currentIndex;
+    
+    let stageStatus = 'Upcoming';
+    let bgColor = '#f1f5f9';
+    let borderColor = '#e2e4e9';
+    
+    if (isPassed) {
+      stageStatus = 'Completed';
+      bgColor = '#dcfce7';
+      borderColor = '#166534';
+    } else if (isCurrent) {
+      stageStatus = 'Current';
+      bgColor = stage.color + '26';
+      borderColor = stage.color;
+    }
+    
+    html += `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:${bgColor};border-radius:8px;border:1px solid ${borderColor}">
+        <div style="width:32px;height:32px;border-radius:50%;background:${stage.color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">
+          ${stage.icon}
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;color:#0d1526">${stage.status}</div>
+          <div style="font-size:11px;color:#6b7280">${stage.dept}</div>
+        </div>
+        <div style="font-size:10px;color:${isPassed ? '#166534' : isCurrent ? stage.color : '#8a90a0'};font-weight:600">
+          ${stageStatus}
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+        <div style="flex:1;background:#e2e4e9;height:6px;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${Math.round(((currentIndex + 1) / workflowStages.length) * 100)}%;background:${workflowStages[currentIndex]?.color || '#1a3faa'};border-radius:3px"></div>
+        </div>
+        <span style="font-size:11px;color:#6b7280">${Math.round(((currentIndex + 1) / workflowStages.length) * 100)}% complete</span>
+      </div>
+    </div>
+    
+    <div style="background:#f8fafc;border-radius:8px;padding:20px">
+      <h4 style="font-size:13px;font-weight:600;color:#0d1526;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em">Project Details</h4>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px">
+        <div style="color:#8a90a0">Site Address:</div>
+        <div>${project.siteAddress || '—'}</div>
+        <div style="color:#8a90a0">Vendor:</div>
+        <div>${project.vendor || '—'}</div>
+        <div style="color:#8a90a0">Phase:</div>
+        <div>${project.phase || '—'}</div>
+        <div style="color:#8a90a0">Date:</div>
+        <div>${project.inspectionDate ? new Date(project.inspectionDate).toLocaleDateString('en-GB') : '—'}</div>
+        <div style="color:#8a90a0">Work Description:</div>
+        <div>${project.workDescription || '—'}</div>
+      </div>
+    </div>
+    
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeIdrisPathModal()" style="padding:8px 16px;border:1px solid #e2e4e9;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">Close</button>
+      <button onclick="viewPATProject('${project.projectId}')" style="padding:8px 16px;background:#1a3faa;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">View Full Details</button>
+    </div>
+  `;
+  
+  document.getElementById('idris-path-content').innerHTML = html;
+  document.getElementById('idris-path-modal').style.display = 'flex';
+}
+
+/**
+ * Close Idris path modal
+ */
+function closeIdrisPathModal() {
+  document.getElementById('idris-path-modal').style.display = 'none';
+}
+
+/**
+ * Filter Idris PATs
+ */
+function filterIdrisPATs() {
+  const searchQ = document.getElementById('idris-pat-search').value.toLowerCase().trim();
+  
+  let filtered = allIdrisPATs;
+  
+  if (searchQ) {
+    filtered = filtered.filter(p =>
+      (p.projectName || '').toLowerCase().includes(searchQ) ||
+      (p.siteAddress || '').toLowerCase().includes(searchQ) ||
+      (p.projectId || '').toLowerCase().includes(searchQ) ||
+      (p.vendor || '').toLowerCase().includes(searchQ) ||
+      (p.submittedBy || '').toLowerCase().includes(searchQ)
+    );
+  }
+  
+  renderIdrisPATTable(filtered);
+}
+
+// Load Idris dashboard when tab is clicked
+document.querySelector('[data-target="idris-dashboard"]').addEventListener('click', () => {
+  if (isIdrisUser()) {
+    loadIdrisDashboard(true);
+  } else if (sharedDashboardData) {
+    loadSharedDashboard();
+  } else {
+    checkSharedDashboardAccess(hasAccess => {
+      if (hasAccess) {
+        loadSharedDashboard();
+      } else {
+        alert('You do not have access to Idris Dashboard. Idris needs to share it with you first.');
+      }
+    });
+  }
 });
 
 </script>
