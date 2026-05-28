@@ -17,7 +17,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 .logo-text{font-size:20px;font-weight:700;color:#1a3faa;letter-spacing:-0.5px}
 .logo-text span{color:#e5342a}
 .nav-divider{width:1px;height:24px;background:#e2e4e9;margin:0 16px}
-.nav-label{font-size:11px;color:#8a90a0;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
+.nav-label { font-size:11px; color:#8a90a0; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; }
 .nav-links{display:flex;align-items:center;gap:4px;margin-left:8px}
 .nav-link{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:13.5px;color:#4a5568;cursor:pointer;text-decoration:none;font-weight:450}
 .nav-link:hover{background:#f0f4ff;color:#1a3faa}
@@ -532,7 +532,10 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
           <div style="background:#f8fafc;border:1px solid #e2e4e9;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
             <div>
               <div style="font-size:11px;color:#8a90a0;font-weight:600;text-transform:uppercase">Snag Score</div>
-              <div id="pm-score" style="font-size:28px;font-weight:700;color:#0d1526">0</div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div id="pm-score" style="font-size:28px;font-weight:700;color:#0d1526">0</div>
+                <div id="pm-verdict-badge" style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:20px; display:inline-block; background:#f1f5f9; color:#475569;">Pending</div>
+              </div>
             </div>
             <div style="margin-left:auto;font-size:12px;color:#8a90a0">Score updates as you fill checklist below</div>
           </div>
@@ -598,6 +601,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 </div>
 
 <script>
+    var scriptUrl = ''; // Global declaration to prevent 'undefined' errors
     // ============================================
     // EMOJI-FREE PROFESSIONAL INTERFACE
     // All emoji have been removed from this file for a professional appearance.
@@ -660,16 +664,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
 
     function redirectToAuth() {
         sessionStorage.clear();
-        var currentScriptUrl = (typeof scriptUrl !== 'undefined') ? scriptUrl : '';
-        var isGasEnv = currentScriptUrl.indexOf('https://script.google.com') !== -1;
-        
-        if (isGasEnv) {
-            var dest = currentScriptUrl + '?page=auth';
-            try { window.top.location.href = dest; }
-            catch(iframeErr) { window.location.href = dest; }
-        } else {
-            window.location.href = 'auth.html';
-        }
+        window.location.href = 'auth.html';
     }
 
     document.getElementById('drop-logout').addEventListener('click', (e) => {
@@ -1994,7 +1989,9 @@ BEHAVIOR:
         }
 
         // ── COHERE VISION API ────────────────────────────────────
-        async function tryCohereVision() {
+    async function tryCohereVision(message, imageAttachments) {
+        // Wrapper for the actual vision API call to avoid conflict with outer function name
+        async function callVisionAPI() {
             const msgs = [{ role: "system", content: systemPrompt }];
 
             // Add recent history (text only for history, current message has images)
@@ -2097,7 +2094,7 @@ BEHAVIOR:
                 try {
                     // Use Vision API if images are attached, otherwise text API
                     if (imageAttachments.length > 0) {
-                        data = await tryCohereVision();
+                        data = await callVisionAPI();
                     } else {
                         data = await tryCohereText();
                     }
@@ -2177,7 +2174,7 @@ BEHAVIOR:
             chatInput.focus();
         }
     }
-
+    }
     chatBtn.addEventListener('click', sendMessage);
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
@@ -2325,6 +2322,11 @@ function canEditCurrentProject() {
   if (myDept === 'mec' || myDept === 'mech') {
     return [PAT_WORKFLOW_STATUS.DRAFT, PAT_WORKFLOW_STATUS.REJECTED, PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC].includes(status);
   }
+
+  // Other departments can only edit if they are the currently assigned department or user
+  if (assignedDept === myDept) return true;
+  if (assignedEmail === myEmail) return true;
+  return false;
 }
 
 /**
@@ -2354,14 +2356,6 @@ function canEditCurrentProjectSnags() {
   return (assignedDept === myDept || assignedEmail === myEmail);
 }
   
-  // Other departments can only edit if they are the currently assigned department
-  // or if they are the assigned user
-  if (assignedDept === myDept) return true;
-  if (assignedEmail === myEmail) return true;
-  
-  return false;
-}
-
 function _sevWeight(s){ return s==="CR"?3:s==="MJ"?2:1; }
 function _sevStyle(s){
   if(s==="CR") return "background:#fee2e2;color:#991b1b";
@@ -2642,6 +2636,18 @@ function selectPATAction(actionType) {
     return;
   }
   
+  const project = currentEditingProject;
+  if (!project) {
+    alert('No project loaded. Please load a project first.');
+    return;
+  }
+  
+  // For approve action, directly open the assignment modal for better UX
+  if (actionType === 'approve') {
+    openAssignModal();
+    return;
+  }
+  
   currentPATAction = actionType;
   const workflowSection = document.getElementById('pm-workflow-section');
   const actionDetails = document.getElementById('pm-action-details');
@@ -2682,6 +2688,11 @@ function selectPATAction(actionType) {
   if (actionType === 'approve') {
     actionDetails.style.display = 'block';
     document.getElementById('pm-action-comments').placeholder = 'Comments for next team (optional)...';
+    // For approve, we can also show an option to send to entire department
+    const deptOption = document.createElement('option');
+    deptOption.value = 'ENTIRE_DEPARTMENT';
+    deptOption.textContent = '-- Send to Entire Next Department --';
+    nextRecipientSelect.appendChild(deptOption);
   } else {
     actionDetails.style.display = 'block';
     document.getElementById('pm-action-comments').placeholder = 'Comments/Reason (required)...';
@@ -2811,7 +2822,45 @@ function submitPATAction() {
   const comments = commentsTextarea ? commentsTextarea.value.trim() : '';
   
   if (!nextEmail) {
-    alert('Please select a recipient.');
+    alert('Please select a recipient or choose to send to entire department.');
+    return;
+  }
+  
+  // Check if sending to entire department
+  if (nextEmail === 'ENTIRE_DEPARTMENT') {
+    // Get next department based on current status
+    const currentStatus = project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+    let nextDept = '';
+    switch(currentStatus) {
+      case PAT_WORKFLOW_STATUS.DRAFT:
+      case PAT_WORKFLOW_STATUS.AWAITING_PROJECT:
+        nextDept = 'Project Team';
+        break;
+      case PAT_WORKFLOW_STATUS.AWAITING_PLANNING:
+        nextDept = 'Service Delivery';
+        break;
+      case PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY:
+        nextDept = 'MEC';
+        break;
+      case PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC:
+        nextDept = 'MEC';
+        break;
+      default:
+        alert('Cannot determine next department for current status.');
+        return;
+    }
+    
+    // Submit to entire department
+    gasCall('submitPATToDepartment', [projectId, nextDept, comments], res => {
+      if (res.success) {
+        alert(`[OK] ${currentPATAction.toUpperCase()}: Project submitted to entire ${nextDept} department. ${res.message}`);
+        cancelPATAction();
+        closePATModal();
+        loadPATProjects(true);
+      } else {
+        alert(`[FAIL] Error: ${res.message}`);
+      }
+    });
     return;
   }
   
@@ -2840,17 +2889,65 @@ function submitPATAction() {
     targetDept = 'MEC';
   }
   
-  // Call the backend to submit to next stage
-  gasCall('submitPATToNextStage', [projectId, nextEmail, comments], res => {
-    if (res.success) {
-      alert(`[OK] ${currentPATAction.toUpperCase()}: Project sent to ${recipientName} (${targetDept}). Comments: ${comments || 'None'}`);
-      cancelPATAction();
-      closePATModal();
-      loadPATProjects(true);
-    } else {
-      alert(`[FAIL] Error: ${res.message}`);
+  // Call the appropriate backend function based on action type
+  if (currentPATAction === 'approve') {
+    // Standard approval - move to next stage
+    gasCall('submitPATToNextStage', [projectId, nextEmail, comments], res => {
+      if (res.success) {
+        alert(`[OK] ${currentPATAction.toUpperCase()}: Project sent to ${recipientName} (${targetDept}). Comments: ${comments || 'None'}`);
+        cancelPATAction();
+        closePATModal();
+        loadPATProjects(true);
+      } else {
+        alert(`[FAIL] Error: ${res.message}`);
+      }
+    });
+  } else if (currentPATAction === 'partial') {
+    // Partial approval with comments - collect snags and send
+    const snagDescs = [...document.querySelectorAll('.pm-snag-desc')].map(i=>i.value);
+    const snagWts   = [...document.querySelectorAll('.pm-snag-wt')].map(i=>i.value);
+    const snagDepts = [...document.querySelectorAll('.pm-snag-dept')].map(i=>i.value);
+    const snagAddedBy = [...document.querySelectorAll('.pm-snag-addedby')].map(i=>i.value);
+    
+    const newSnags = snagDescs.map((d,i)=>({
+      desc: d,
+      weight: parseInt(snagWts[i])||0,
+      department: snagDepts[i]||'',
+      addedBy: snagAddedBy[i]||'',
+      addedByEmail: sessionStorage.getItem('sd_email')||'',
+      addedAt: new Date().toISOString()
+    })).filter(r=>r.desc.trim());
+    
+    // For partial approval, we need to move to next stage with comments
+    gasCall('partiallyApprovePAT', [projectId, comments, newSnags], res => {
+      if (res.success) {
+        alert(`[OK] PARTIALLY APPROVED: Project moved to next stage. Verdict: ${res.verdict}, Score: ${res.snagScore}. Comments: ${comments}`);
+        cancelPATAction();
+        closePATModal();
+        loadPATProjects(true);
+      } else {
+        alert(`[FAIL] Error: ${res.message}`);
+      }
+    });
+  } else if (currentPATAction === 'reject') {
+    // Reject with reason - send back to previous department
+    const reason = comments || prompt('Please provide reason for rejection:');
+    if (!reason || reason.trim() === '') {
+      alert('Reason is required for rejection.');
+      return;
     }
-  });
+    
+    gasCall('rejectPATWithReason', [projectId, reason], res => {
+      if (res.success) {
+        alert(`[OK] REJECTED: Project sent back to ${res.previousStatus}. Reason: ${reason}`);
+        cancelPATAction();
+        closePATModal();
+        loadPATProjects(true);
+      } else {
+        alert(`[FAIL] Error: ${res.message}`);
+      }
+    });
+  }
 }
 
 function updateWorkflowUI(project) {
@@ -2866,9 +2963,9 @@ function updateWorkflowUI(project) {
   // Find stage info
   const stageInfo = PAT_STAGE_FLOW.find(s => s.status === workflowStatus);
   if (stageInfo) {
-    deptLabel.textContent = stageInfo.dept + " - " + stageInfo.label;
-    titleLabel.textContent = project ? project.projectName : "New PAT Project";
+    deptLabel.textContent = stageInfo.dept;
   }
+  titleLabel.textContent = project ? project.projectName : "New PAT Project";
   
   // Show workflow status bar
   const workflowBar = document.getElementById('workflow-status-bar');
@@ -2916,7 +3013,19 @@ function updateWorkflowUI(project) {
   if (workflowSection) {
     // Check if current user can perform workflow actions on this project
     const canPerformWorkflow = canEditCurrentProject();
-    workflowSection.style.display = canPerformWorkflow && project ? 'block' : 'none';
+    // Also show workflow section for assigned users who can take actions (approve/reject)
+    const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+    const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+    const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+    const isAssigned = project && ((project.assignedToDept || '').toLowerCase() === myDept || 
+                             (project.assignedToEmail || '').toLowerCase() === myEmail);
+    
+    // Show workflow section if:
+    // 1. User can edit the project, OR
+    // 2. User is the assigned user (can approve/reject even if not MEC), OR
+    // 3. User is admin
+    const shouldShowWorkflow = canPerformWorkflow || isAssigned || myRole === 'admin' || myRole === 'super admin';
+    workflowSection.style.display = shouldShowWorkflow && project ? 'block' : 'none';
   }
   
   // Update action buttons based on workflow status and user permissions
@@ -3031,14 +3140,15 @@ function updatePATScore(isWorkflowUpdate = false) {
     score += _sevWeight(r.dataset.sev);
     if(r.dataset.sev === "CR") hasCR = true;
   });
-  document.querySelectorAll(".pm-snag-wt").forEach(i => { score += parseInt(i.value)||0; });
+  const snagWts = document.querySelectorAll(".pm-snag-wt");
+  if (snagWts.length) snagWts.forEach(i => { score += parseInt(i.value)||0; });
 
   document.getElementById("pm-score").textContent = score;
   if(document.getElementById("pm-snag-total"))
     document.getElementById("pm-snag-total").textContent = score;
 
   const badge = document.getElementById("pm-verdict-badge");
-  if(!currentPMVerdict) {
+  if (badge && !currentPMVerdict) {
     if(hasCR || score >= 3){
       badge.textContent = "FAIL"; badge.style.background="#fee2e2"; badge.style.color="#991b1b";
     } else if(document.querySelectorAll('#pm-checklist-wrap input[type=radio]:checked').length > 0){
@@ -3225,6 +3335,15 @@ function openAssignModal() {
     `;
     
     if (res.members && res.members.length > 0) {
+      // Add option to send to entire department
+      html += `
+        <div style="padding:12px;margin-bottom:8px;background:#fff;border-radius:8px;border:2px solid #1a3faa;cursor:pointer;transition:.15s;font-weight:600;" 
+             onclick="submitToEntireDepartment('${nextDept}')" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+          <div style="color:#1a3faa;font-size:14px">📤 Send to ALL ${res.members.length} members in ${nextDept}</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px">Notify entire department at once</div>
+        </div>
+      `;
+      
       res.members.forEach(member => {
         html += `
           <div style="padding:10px;margin-bottom:8px;background:#f8fafc;border-radius:8px;border:1px solid #e2e4e9;cursor:pointer;transition:.15s" 
@@ -3248,6 +3367,33 @@ function openAssignModal() {
     
     modalContent.innerHTML = html;
     document.getElementById('assign-modal').style.display = 'flex';
+  });
+}
+
+/**
+ * Submit to entire department (called from assignment modal)
+ */
+function submitToEntireDepartment(department) {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  const comments = prompt("Add any comments for the " + department + " team (optional):");
+  
+  gasCall('submitPATToDepartment', [
+    currentEditingProject.projectId,
+    department,
+    comments || ""
+  ], res => {
+    closeAssignModal();
+    if (res.success) {
+      alert(res.message);
+      closePATModal();
+      loadPATProjects(true); // Force refresh from sheet
+    } else {
+      alert("Error: " + res.message);
+    }
   });
 }
 
