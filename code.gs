@@ -68,12 +68,12 @@ var PAT_STAGE_ORDER = [
   { status: PAT_WORKFLOW.DRAFT, dept: "MEC", next: PAT_WORKFLOW.AWAITING_PROJECT, prev: null },
   { status: PAT_WORKFLOW.AWAITING_PROJECT, dept: "Project Team", next: PAT_WORKFLOW.AWAITING_PLANNING, prev: PAT_WORKFLOW.DRAFT },
   { status: PAT_WORKFLOW.AWAITING_PLANNING, dept: "Planning Team", next: PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY, prev: PAT_WORKFLOW.AWAITING_PROJECT },
-  { status: PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY, dept: "Service Delivery", next: PAT_WORKFLOW.AWAITING_FINAL_MEC, prev: PAT_WORKFLOW.AWAITING_PLANNING },
+  { status: PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY, dept: "Service Delivery / Metro", next: PAT_WORKFLOW.AWAITING_FINAL_MEC, prev: PAT_WORKFLOW.AWAITING_PLANNING },
   { status: PAT_WORKFLOW.AWAITING_FINAL_MEC, dept: "MEC", next: PAT_WORKFLOW.COMPLETED, prev: PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY }
 ];
 
 // Snag Department Tracking
-var SNAG_DEPARTMENTS = ["MEC", "Project Team", "Planning Team", "Service Delivery"];
+var SNAG_DEPARTMENTS = ["MEC", "Project Team", "Planning Team", "Service Delivery / Metro"];
 
 /**
  * Configuration Helper
@@ -168,7 +168,7 @@ function runFirstSetup() {
   var deptsSh = _sheet(SD.DEPTS, ["DeptID","Name","HeadEmail","CreatedAt","CreatedBy"]);
   if (deptsSh.getLastRow() > 1) deptsSh.deleteRows(2, deptsSh.getLastRow() - 1);
 
-  var targetDepts = ["MEC", "Project Team", "Planning Team", "Service Delivery", "SD Team"];
+  var targetDepts = ["MEC", "Project Team", "Planning Team", "Service Delivery / Metro"];
   targetDepts.forEach(function(d) {
     deptsSh.appendRow([_genId("DEPT"), d, "", new Date().toISOString(), "System"]);
   });
@@ -191,11 +191,11 @@ function runFirstSetup() {
   });
 
   // Seed a default super-admin if no users exist yet
-  if (users.getLastRow() < 5) {
+  if (users.getLastRow() < 4) {
     _createUserRow("MEC Test Account", "mec-test@fob.ng", "system", "super admin", "MEC", "Other", "TRUE", "FALSE");
     _createUserRow("Project Test Account", "project-test@fob.ng", "system", "admin", "Project Team", "Other", "TRUE", "FALSE");
     _createUserRow("Planning Test Account", "planning-test@fob.ng", "system", "admin", "Planning Team", "Other", "TRUE", "FALSE");
-    _createUserRow("SD Test Account", "sd-test@fob.ng", "system", "admin", "SD Team", "Other", "TRUE", "FALSE");
+    _createUserRow("SD Test Account", "sd-test@fob.ng", "system", "admin", "Service Delivery / Metro", "Other", "TRUE", "FALSE");
   }
 
   ss.toast("✅ SD Portal Setup Complete — v1.0 Ready", "Setup", 5);
@@ -1059,7 +1059,7 @@ function getNextStageUsers(token, currentWorkflowStatus) {
         nextDept = "Project Team";
         break;
       case PAT_WORKFLOW.AWAITING_PLANNING:
-        nextDept = "Service Delivery";
+        nextDept = "Service Delivery / Metro";
         break;
       case PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY:
         nextDept = "MEC";

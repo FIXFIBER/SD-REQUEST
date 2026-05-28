@@ -434,14 +434,27 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
     </div>
 
     <!-- Workflow Assignment Modal -->
-    <div id="assign-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2001;align-items:center;justify-content:center">
-      <div style="background:#fff;max-width:500px;width:90%;border-radius:16px;overflow:hidden">
+    <div id="workflow-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2001;align-items:center;justify-content:center">
+      <div style="background:#fff;max-width:550px;width:90%;border-radius:16px;overflow:hidden;box-shadow:var(--shadow-xl)">
         <div style="background:#0d1526;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:700">Assign to Next Department</div>
+          <div style="font-weight:700" id="workflow-modal-title">Process PAT Action</div>
+          <button onclick="closeWorkflowModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px" aria-label="Close">X</button>
+        </div>
+        <div style="padding:24px" id="workflow-modal-content">
+           <!-- Content dynamically injected by openWorkflowModal() -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Assign to Next Department Modal -->
+    <div id="assign-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2002;align-items:center;justify-content:center">
+      <div style="background:#fff;max-width:600px;width:90%;max-height:80vh;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="background:#0d1526;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Assign PAT to Next Department</div>
           <button onclick="closeAssignModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px" aria-label="Close">X</button>
         </div>
-        <div style="padding:20px">
-          <div id="assign-modal-content"></div>
+        <div style="padding:24px;overflow-y:auto;flex:1" id="assign-modal-content">
+          <!-- Content dynamically injected by openAssignModal() -->
         </div>
       </div>
     </div>
@@ -583,14 +596,14 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             <button onclick="savePATForm('draft')" class="btn-primary" style="padding:10px 24px;font-size:14px" id="btn-save-draft">
               <i class="ti ti-device-floppy"></i> Save Draft
             </button>
-            <button onclick="openAssignModal()" class="btn-primary" style="padding:10px 24px;font-size:14px;background:#166534;display:none" id="btn-submit-next">
-              <i class="ti ti-send"></i> Submit to Next Stage
+            <button onclick="openWorkflowAction()" class="btn-primary" style="padding:10px 24px;font-size:14px;background:#166534;display:none" id="btn-submit-next">
+              <i class="ti ti-send"></i> Process PAT / Take Action
+            </button>
+            <button class="btn-primary" style="padding:10px 24px;font-size:14px;background:#166534;display:none" id="btn-workflow-action">
+              <i class="ti ti-rotate-2"></i> Process PAT / Take Action
             </button>
             <button onclick="approveFinalPAT()" class="btn-primary" style="padding:10px 24px;font-size:14px;background:#166534;display:none" id="btn-final-approve">
               <i class="ti ti-check"></i> Final Approve & Complete
-            </button>
-            <button onclick="rejectPATWithReason()" class="btn-primary" style="padding:10px 24px;font-size:14px;background:#dc2626;display:none" id="btn-reject">
-              <i class="ti ti-x"></i> Reject
             </button>
           </div>
         </div>
@@ -1235,12 +1248,14 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
                 const snagWts = document.querySelectorAll('.pm-snag-wt');
                 const snagDepts = document.querySelectorAll('.pm-snag-dept');
                 const snagAddedBy = document.querySelectorAll('.pm-snag-addedby');
+                const snagClearanceDates = document.querySelectorAll('.pm-snag-clearance-date');
                 analysis.snags.forEach((snag, i) => {
                     if(i < 7) {
                         if(snag.desc) snagDescs[i].value = snag.desc;
                         if(snag.weight) snagWts[i].value = snag.weight;
                         if(snag.department) snagDepts[i].value = snag.department;
                         if(snag.addedBy) snagAddedBy[i].value = snag.addedBy;
+                        if(snag.clearanceDate) snagClearanceDates[i].value = snag.clearanceDate;
                     }
                 });
             }
@@ -1393,13 +1408,13 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             ? `Total Users: ${globalUsersData.length}\nRecent Users:\n${recentUsers.map(u => `- ${u.name} (${u.email}) | Role: ${u.role} | Dept: ${u.department}`).join('\n')}`
             : "No users found.";
         
-        const deptCtx = `Active Depts: ${globalDeptsData.map(d => d.name).join(', ')}.`;
+        const deptCtx = `Active Depts: MEC, Project Team, Planning Team, Service Delivery / Metro.`;
         
         const patSummary = recentProjects.length > 0
             ? `Recent PAT Projects:\n` + recentProjects.map(p => `- [${p.projectId}] ${p.projectName}: Status: ${p.workflowStatus || p.status}, Score: ${p.snagScore}, Verdict: ${p.verdict}`).join('\n')
             : "No PAT projects found.";
 
-        const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband — the central nervous system for internal infrastructure and administrative control.
+        const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband. You are not just a tool; you are a sophisticated, proactive, and highly intelligent administrative partner.
         
 USER: ${sessionStorage.getItem('sd_name')} (${sessionStorage.getItem('sd_role')}) | Dept: ${sessionStorage.getItem('sd_department')}.
 
@@ -1408,7 +1423,7 @@ VISION CAPABILITY: You can SEE and READ images, documents, screenshots, scanned 
 COMMAND PROTOCOL:
 1. When you need to act on the system, output a JSON block with language tag "json-cmd".
 2. Format: \`\`\`json-cmd [ { "type": "...", "params": { ... } } ] \`\`\`
-3. NEVER confirm an action is finished in the same turn you send the command.
+3. Acknowledge what you are doing in natural language (e.g., "I'm pulling up that project for you now...").
 4. Wait for "SYSTEM_FEEDBACK" before providing final human confirmation.
 5. Use exact emails from the directory.
 
@@ -1438,7 +1453,7 @@ COMMAND LIST:
 - CREATE_AND_SUBMIT_PAT: {} - Creates a new PAT with random data, saves it, and submits to the next department in one action.
 - PARTIALLY_APPROVE_PAT: {"comments": "required comments", "projectId": "PAT-XXXXX"} - Partially approves with required comments.
 - REJECT_PAT_WITH_REASON: {"reason": "required reason", "projectId": "PAT-XXXXX"} - Rejects PAT back to previous department.
-- SUBMIT_TO_DEPARTMENT: {"department": "Project Team/Planning Team/Service Delivery", "comments": "optional"} - Submits to entire next department.
+- SUBMIT_TO_DEPARTMENT: {"department": "Project Team/Planning Team/Service Delivery / Metro", "comments": "optional"} - Submits to entire next department.
 - CREATE_USER: {"name","email","password","dept","role","gender"}
 - UPDATE_USER_ROLE: {"userId","role"}
 - UPDATE_USER: {"userId", "updates": {"name", "email", "dept", "gender"}}
@@ -1535,7 +1550,10 @@ DEPARTMENT TRANSITIONS:
 
 SYNCHRONIZATION NOTE: If the user mentions that a project exists in the app but not in the sheet, or if they say they deleted something from the sheet but it still appears in the app, USE THE LIST_PAT_PROJECTS command FIRST to get the current state from the system records. This ensures you're working with fresh data.
 
-NEVER summarize in text what you will do. ALWAYS use the json-cmd block first.
+INTELLIGENCE & CONVERSATION:
+- Be proactive. If a user asks about a project that failed, suggest ways to fix the snags or offer to re-assign it.
+- Don't be robotic. Use a professional yet conversational tone. 
+- If you perform an action, briefly explain its significance in the workflow.
 
 TERMINOLOGY: Refer to the backend as "The System", "Core Infrastructure", or "System Records". NEVER use terms like "spreadsheet" or "sheet".
 
@@ -1545,13 +1563,135 @@ Depts: ${deptCtx}
 PAT Records (Note: IDs now use FOB- prefix): ${patSummary}
 
 BEHAVIOR:
-- Be concise but thorough
+- Be proactive and insightful.
 - For data questions, provide accurate counts and summaries
 - For user management, verify before acting
 - For PAT forms, intelligently parse descriptions and fill all relevant fields
 - If user asks to "create PAT for [project]", open the form and fill it automatically
 - When analyzing documents, describe what you see before extracting data
 - Always confirm actions with specific details (names, IDs, scores)`;
+
+        // ---------- ACTUALLY CALL THE AI ----------
+        try {
+            const executeAICommands = async (text) => {
+                const jsonBlockRegex = /```json-cmd\s*([\s\S]*?)\s*```/g;
+                let match;
+                while ((match = jsonBlockRegex.exec(text)) !== null) {
+                    try {
+                        const commands = JSON.parse(match[1]);
+                        const cmdArray = Array.isArray(commands) ? commands : [commands];
+                        for (const cmd of cmdArray) {
+                            addSystemNote(`Executing action: ${cmd.type}...`);
+                            const result = await executeCommand(cmd);
+                            if (result.success) addSystemNote(`[OK] ${cmd.type} completed. ${result.message || ''}`);
+                            else addSystemNote(`[FAIL] ${cmd.type} failed: ${result.message}`, true);
+                        }
+                    } catch (e) { console.error("JSON Parse Error", e); }
+                }
+            };
+
+            let aiReply = '';
+            if (imageAttachments.length > 0) {
+                aiReply = await callCohereVision(message, imageAttachments, systemPrompt, chatHistory);
+            } else {
+                aiReply = await callCohereText(message, systemPrompt, chatHistory);
+            }
+            thinkingMsg.remove();
+
+            // Filter out JSON commands from the displayed message
+            const displayReply = aiReply.replace(/```json-cmd[\s\S]*?```/g, '').trim();
+            if (displayReply) {
+                const botMsg = document.createElement('div');
+                botMsg.className = 'msg bot';
+                botMsg.innerHTML = displayReply.replace(/\n/g, '<br>');
+                chatMessages.appendChild(botMsg);
+            }
+            chatHistory.push({ role: "assistant", content: aiReply });
+            await executeAICommands(aiReply);
+        } catch (err) {
+            console.error("Cohere failed:", err);
+            thinkingMsg.remove();
+            try {
+                const fallbackReply = await callOpenRouter(message, systemPrompt, chatHistory);
+                const displayFallback = fallbackReply.replace(/```json-cmd[\s\S]*?```/g, '').trim();
+                if (displayFallback) {
+                    const botMsg = document.createElement('div');
+                    botMsg.className = 'msg bot';
+                    botMsg.innerHTML = displayFallback.replace(/\n/g, '<br>');
+                    chatMessages.appendChild(botMsg);
+                }
+                chatHistory.push({ role: "assistant", content: fallbackReply });
+                await executeAICommands(fallbackReply);
+            } catch (fallbackErr) {
+                const errMsg = document.createElement('div');
+                errMsg.className = 'msg bot';
+                errMsg.style.color = '#dc2626';
+                errMsg.innerText = "Error: " + (err.message || "AI service unavailable");
+                chatMessages.appendChild(errMsg);
+            }
+        } finally {
+            chatBtn.disabled = false;
+            chatInput.disabled = false;
+            chatBtn.innerText = originalBtnText;
+            chatInput.focus();
+        }
+
+        async function callCohereText(userMessage, systemPrompt, chatHistory) {
+    const msgs = [{ role: "system", content: systemPrompt }];
+    chatHistory.slice(-8).forEach(h => {
+        if (typeof h.content === 'string') msgs.push({ role: h.role, content: h.content });
+    });
+    msgs.push({ role: "user", content: userMessage });
+    const res = await fetch("https://api.cohere.com/v2/chat", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${COHERE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "command-r-plus-08-2024", messages: msgs, temperature: 0.5, max_tokens: 1200 })
+    });
+    if (!res.ok) throw new Error(`Cohere error ${res.status}`);
+    const data = await res.json();
+    return data.message?.content?.[0]?.text || "";
+}
+
+async function callCohereVision(userMessage, imageAttachments, systemPrompt, chatHistory) {
+    const msgs = [{ role: "system", content: systemPrompt }];
+    chatHistory.slice(-6).forEach(h => {
+        if (h.role === 'user' && typeof h.content === 'string') msgs.push({ role: "user", content: h.content });
+        else if (h.role === 'assistant' && typeof h.content === 'string') msgs.push({ role: "assistant", content: h.content });
+    });
+    const currentContent = [];
+    if (userMessage) currentContent.push({ type: "text", text: userMessage });
+    if (imageAttachments.length) currentContent.push(...imageAttachments);
+    msgs.push({ role: "user", content: currentContent });
+    const res = await fetch("https://api.cohere.com/v2/chat", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${COHERE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "command-a-vision-07-2025", messages: msgs, temperature: 0.4, max_tokens: 2000 })
+    });
+    if (!res.ok) throw new Error(`Cohere vision error ${res.status}`);
+    const data = await res.json();
+    return data.message?.content?.[0]?.text || "";
+}
+
+async function callOpenRouter(userMessage, systemPrompt, chatHistory) {
+    const msgs = [{ role: "system", content: systemPrompt }];
+    chatHistory.slice(-8).forEach(h => {
+        if (typeof h.content === 'string') msgs.push({ role: h.role, content: h.content });
+    });
+    msgs.push({ role: "user", content: userMessage });
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": window.location.href,
+            "X-Title": "FiberOne Admin"
+        },
+        body: JSON.stringify({ model: "google/gemini-2.0-flash-exp:free", messages: msgs, temperature: 0.5, max_tokens: 1200 })
+    });
+    if (!res.ok) throw new Error(`OpenRouter error ${res.status}`);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "";
+}
 
         async function executeCommand(cmd) {
             const gasCallAsync = (fn, args) => new Promise((resolve, reject) => {
@@ -1990,217 +2130,8 @@ BEHAVIOR:
                 verdict: Math.random() > 0.7 ? 'Fully Accepted' : (Math.random() > 0.5 ? 'Partially Accepted' : 'Rejected')
             };
         }
-
-        // ── COHERE VISION API ────────────────────────────────────
-    async function tryCohereVision() {
-        async function callVisionAPI() {
-            const msgs = [{ role: "system", content: systemPrompt }];
-
-            // Add recent history (text only for history, current message has images)
-            chatHistory.slice(-6).forEach(h => {
-                if (h.role === 'user' && typeof h.content === 'string') {
-                    msgs.push({ role: "user", content: h.content });
-                } else if (h.role === 'assistant' && typeof h.content === 'string') {
-                    msgs.push({ role: "assistant", content: h.content });
-                }
-            });
-
-            // Current message with images
-            const currentContent = [];
-            if (message) currentContent.push({type: "text", text: message});
-            if (imageAttachments.length > 0) {
-                imageAttachments.forEach(img => currentContent.push(img));
-            }
-
-            if (currentContent.length > 0) {
-                msgs.push({ role: "user", content: currentContent });
-            }
-
-            const res = await fetch("https://api.cohere.com/v2/chat", {
-                method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${COHERE_API_KEY}`, 
-                    "Content-Type": "application/json" 
-                },
-                body: JSON.stringify({ 
-                    model: "command-a-vision-07-2025", 
-                    messages: msgs, 
-                    temperature: 0.4, 
-                    max_tokens: 2000 
-                })
-            });
-            if (!res.ok) {
-                const errText = await res.text();
-                throw new Error("Cohere Vision API error: " + errText);
-            }
-            return res.json();
-        }
-
-        async function tryCohereText() {
-            const msgs = [{ role: "system", content: systemPrompt }];
-            chatHistory.slice(-8).forEach(h => {
-                if (typeof h.content === 'string') {
-                    msgs.push({ role: h.role, content: h.content });
-                }
-            });
-
-            const res = await fetch("https://api.cohere.com/v2/chat", {
-                method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${COHERE_API_KEY}`, 
-                    "Content-Type": "application/json" 
-                },
-                body: JSON.stringify({ 
-                    model: "command-r-plus-08-2024", 
-                    messages: msgs, 
-                    temperature: 0.5, 
-                    max_tokens: 1200 
-                })
-            });
-            if (!res.ok) throw new Error("Cohere text API busy");
-            return res.json();
-        }
-
-        async function tryOpenRouter() {
-            const msgs = [{ role: "system", content: systemPrompt }];
-            chatHistory.slice(-8).forEach(h => {
-                if (typeof h.content === 'string') {
-                    msgs.push({ role: h.role, content: h.content });
-                }
-            });
-
-            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": window.location.href,
-                    "X-Title": "FiberOne Admin"
-                },
-                body: JSON.stringify({ 
-                    model: "google/gemini-2.0-flash-exp:free", 
-                    messages: msgs, 
-                    temperature: 0.5, 
-                    max_tokens: 1200 
-                })
-            });
-            if (!res.ok) throw new Error("OpenRouter failed");
-            const data = await res.json();
-            return { message: { content: [{text: data.choices?.[0]?.message?.content || "I'm sorry, I couldn't generate a response."}] } };
-        }
-
-        try {
-            let data, loopCount = 0;
-
-            // Add timeout to prevent hanging
-            const aiCallTimeout = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("AI response timeout after 30 seconds")), 30000)
-            );
-
-            while (loopCount < 3) {
-                try {
-                    // Use Vision API if images are attached, otherwise text API
-                    if (imageAttachments.length > 0) {
-                        data = await Promise.race([tryCohereVision(), aiCallTimeout]);
-                    } else {
-                        data = await Promise.race([tryCohereText(), aiCallTimeout]);
-                    }
-                } catch (e) {
-                    console.error("Primary AI error:", e);
-                    addSystemNote("Primary AI busy → using backup engine", false);
-                    try {
-                        data = await Promise.race([tryOpenRouter(), aiCallTimeout]);
-                    } catch(backupErr) {
-                        console.error("Backup AI error:", backupErr);
-                        // Remove thinking message before throwing
-                        if (thinkingMsg.parentNode) thinkingMsg.remove();
-                        throw new Error("All AI engines failed or timed out. Please try again. " + (e.message || backupErr.message));
-                    }
-                }
-
-                let aiReply = data.message?.content?.[0]?.text || data.choices?.[0]?.message?.content || "";
-
-                // Parse JSON-CMD blocks
-                const jsonBlockRegex = /\`\`\`json-cmd\s*([\s\S]*?)\s*\`\`\`/g;
-                let match, commands = [], cleanReply = aiReply;
-
-                while ((match = jsonBlockRegex.exec(aiReply)) !== null) {
-                    try {
-                        const parsed = JSON.parse(match[1]);
-                        if (Array.isArray(parsed)) commands.push(...parsed);
-                        else commands.push(parsed);
-                        cleanReply = cleanReply.split(match[0]).join('');
-                    } catch (e) { console.error("JSON Parse Error", e); }
-                }
-
-                if (commands.length > 0) {
-                    addSystemNote(`[SYSTEM] Executing ${commands.length} action(s)...`);
-                    let results = [];
-                    for (const cmd of commands) {
-                        const res = await executeCommand(cmd);
-                        const resultTxt = `Command ${cmd.type}: ${res.success ? 'SUCCESS' : 'FAILED - ' + res.message}`;
-                        results.push(resultTxt);
-                        if (res.success) addSystemNote(`[OK] ${cmd.type} completed.`);
-                        else addSystemNote(`[FAIL] ${cmd.type} failed: ${res.message}`, true);
-                    }
-
-                    // Don't push SYSTEM_FEEDBACK to chatHistory - just show the cleaned AI reply
-                    if (thinkingMsg.parentNode) thinkingMsg.remove();
-                    const historyContent = cleanReply.trim() || "Done.";
-                    
-                    // Show both the AI response and the command results
-                    let finalMessage = historyContent;
-                    if (results.length > 0) {
-                        finalMessage += `\n\n[SYSTEM FEEDBACK]: ${results.join(' | ')}`;
-                    }
-                    
-                    chatHistory.push({ role: "assistant", content: historyContent });
-
-                    const botMsg = document.createElement('div');
-                    botMsg.className = 'msg bot';
-                    botMsg.innerHTML = finalMessage.replace(/\n/g, '<br>');
-                    chatMessages.appendChild(botMsg);
-                    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
-                    
-                    loadAllData();
-                    break;
-                } else {
-                    if (thinkingMsg.parentNode) thinkingMsg.remove();
-                    const historyContent = cleanReply.trim() || "Done.";
-                    chatHistory.push({ role: "assistant", content: historyContent });
-
-                    const botMsg = document.createElement('div');
-                    botMsg.className = 'msg bot';
-                    botMsg.innerHTML = historyContent;
-                    chatMessages.appendChild(botMsg);
-                    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
-                    break;
-                }
-            }
-        } catch (err) {
-            thinkingMsg.remove();
-            if (chatHistory.length > 0) chatHistory.pop();
-            const errDiv = document.createElement('div');
-            errDiv.className = 'msg bot';
-            errDiv.style.color = '#dc2626';
-
-            let friendlyMsg = err.message || "Connection failed. Please try again.";
-            if (friendlyMsg.includes('429')) {
-                friendlyMsg = "[WARN] SD-AI is currently at capacity on the free tier. Please wait about 30 seconds before trying your request again.";
-            }
-
-            errDiv.innerText = friendlyMsg;
-            chatMessages.appendChild(errDiv);
-            console.error(err);
-        } finally {
-            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
-            chatBtn.disabled = false;
-            chatInput.disabled = false;
-            chatBtn.innerText = originalBtnText;
-            chatInput.focus();
-        }
     }
-    }
+
     chatBtn.addEventListener('click', sendMessage);
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
@@ -2317,7 +2248,7 @@ const PAT_BOQ_ITEMS = [
   "Metallic Pole (Supply & Installation)"
 ];
 
-const PAT_SIGNOFF_TEAMS = ["MEC Team", "Project Team", "Planning Team", "SD Team"];
+const PAT_SIGNOFF_TEAMS = ["MEC Team", "Project Team", "Planning Team", "Service Delivery / Metro"];
 
 function _checkPATEditPermission() {
   const role = (sessionStorage.getItem('sd_role')||'').toLowerCase();
@@ -2357,7 +2288,8 @@ function canEditCurrentProject() {
 
 /**
  * Check if current user can edit snags in the loaded project
- * Only the currently assigned department can edit snags
+ * Only the currently assigned department (NOT MEC) can edit snags
+ * MEC can only fill site information, NOT snag list
  */
 function canEditCurrentProjectSnags() {
   if (!currentEditingProject) return false;
@@ -2373,9 +2305,9 @@ function canEditCurrentProjectSnags() {
   // Admins can edit anything
   if (myRole === 'admin' || myRole === 'super admin') return true;
   
-  // MEC can edit snags in drafts, rejected, and final review
+  // MEC CANNOT edit snags - they only fill site information
   if (myDept === 'mec' || myDept === 'mech') {
-    return [PAT_WORKFLOW_STATUS.DRAFT, PAT_WORKFLOW_STATUS.REJECTED, PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC].includes(status);
+    return false;
   }
   
   // Other departments can only edit snags if they are the assigned department
@@ -2387,6 +2319,46 @@ function _sevStyle(s){
   if(s==="CR") return "background:#fee2e2;color:#991b1b";
   if(s==="MJ") return "background:#fef9c3;color:#854d0e";
   return "background:#dbeafe;color:#1e40af";
+}
+
+/**
+ * Check if current user can perform workflow actions (Approve/Partial/Reject) on a project
+ * Only the assigned department can perform workflow actions, NOT MEC (except for final review)
+ */
+function canPerformWorkflowAction(project) {
+  if (!project) return false;
+  
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  
+  // Admins can perform any workflow action
+  if (myRole === 'admin' || myRole === 'super admin') return true;
+  
+  const status = project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  const assignedDept = (project.assignedToDept || '').toLowerCase();
+  const assignedEmail = (project.assignedToEmail || '').toLowerCase();
+  
+  // MEC/MECH can only perform workflow actions on Draft, Rejected, or Final MEC Review
+  if (myDept === 'mec' || myDept === 'mech') {
+    return [PAT_WORKFLOW_STATUS.DRAFT, PAT_WORKFLOW_STATUS.REJECTED, PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC].includes(status);
+  }
+  
+  // Other departments can only perform workflow actions if they are the assigned department
+  // or if the project is awaiting their department
+  const deptAwaiting = {
+    'project team': PAT_WORKFLOW_STATUS.AWAITING_PROJECT,
+    'planning team': PAT_WORKFLOW_STATUS.AWAITING_PLANNING,
+    'service delivery': PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY,
+    'service delivery / metro': PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY
+  };
+  
+  // Check if this department is the one that should be acting on this project
+  if (deptAwaiting[myDept] === status) return true;
+  if (assignedDept === myDept) return true;
+  if (assignedEmail === myEmail) return true;
+  
+  return false;
 }
 
 // Workflow Status Constants (must match backend)
@@ -2526,21 +2498,32 @@ function buildPATModal(projectData = null) {
   boq += `</tbody></table>`;
   wrap.innerHTML += boq;
 
-  // Snag List - NEW: One line per snag with department tracking
-  wrap.innerHTML += `<div style="background:#e5342a;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px">Snag List — Any CR snag or total score ≥ 3 = AUTOMATIC FAIL. <span style="font-weight:400">Only Snag List is editable in this document.</span></div>`;
+  // Snag List - Only editable by assigned department (NOT MEC)
+  wrap.innerHTML += `<div style="background:#e5342a;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px">Snag List — Any CR snag or total score ≥ 3 = AUTOMATIC FAIL. <span style="font-weight:400">Only the assigned department can edit snags in this document.</span></div>`;
   
   // Check if user can edit snags based on workflow and department
   const canEditSnags = canEditCurrentProjectSnags();
+  const myEmail = sessionStorage.getItem('sd_email') || '';
+  const myName = sessionStorage.getItem('sd_name') || '';
   const snagOnlyEditable = canEditSnags ? '' : 'readonly style="background:#f8fafc;cursor:not-allowed"';
   
-  let snag = `<table style="width:100%;border-collapse:collapse;font-size:12px"${roStyle}>
+  let snag = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">`;
+  if (canEditSnags) {
+    snag += `<button onclick="addSnagRow()" style="background:#e5342a;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px" title="Add New Snag Row">
+      <span>+</span> Add Snag
+    </button>`;
+  }
+  snag += `</div>`;
+  
+  snag += `<table style="width:100%;border-collapse:collapse;font-size:12px"${roStyle}>
     <thead><tr style="background:#fff5f5;font-size:10px;text-transform:uppercase;color:#991b1b">
       <th style="padding:6px 8px;border:1px solid #fca5a5;width:30px">#</th>
       <th style="padding:6px 8px;border:1px solid #fca5a5">Snag Description</th>
       <th style="padding:6px 8px;border:1px solid #fca5a5;width:60px">Weight</th>
       <th style="padding:6px 8px;border:1px solid #fca5a5;width:120px">Department</th>
       <th style="padding:6px 8px;border:1px solid #fca5a5;width:100px">Added By</th>
-    </tr></thead><tbody>`;
+      <th style="padding:6px 8px;border:1px solid #fca5a5;width:100px">Clearance Date</th>
+    </tr></thead><tbody id="pm-snag-tbody">`;
   
   // If editing, show input fields for new snags
   if (canEditSnags) {
@@ -2550,30 +2533,27 @@ function buildPATModal(projectData = null) {
         <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-desc" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Describe snag..." onchange="updatePATScore()"></td>
         <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-wt" type="number" min="0" max="3" style="width:100%;border:none;outline:none;font-size:12px;text-align:center;font-family:inherit" placeholder="0" onchange="updatePATScore()"></td>
         <td style="border:1px solid #e2e4e9;padding:3px 6px;text-align:center;font-size:11px;">
-          <select class="pm-snag-dept" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit">
-            <option value="">Select Dept</option>
-            <option value="MEC">MEC</option>
-            <option value="Project Team">Project Team</option>
-            <option value="Planning Team">Planning Team</option>
-            <option value="Service Delivery">Service Delivery</option>
-          </select>
+          <input class="pm-snag-dept" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" value="${myDept.charAt(0).toUpperCase() + myDept.slice(1)}" readonly>
         </td>
-        <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-addedby" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" placeholder="Your Name" value="${sessionStorage.getItem('sd_name')||''}"></td>
+        <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-addedby" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" value="${myName}" readonly></td>
+        <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-clearance-date" type="date" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" value="${new Date().toISOString().split('T')[0]}"></td>
       </tr>`;
     }
   } else {
-    // Read-only view - show existing snags with department info
+    // Read-only view - show existing snags with department info and clearance date
     const currentSnags = currentEditingProject && currentEditingProject.snags ? currentEditingProject.snags : [];
     if (currentSnags.length === 0) {
-      snag += `<tr><td colspan="5" style="border:1px solid #e2e4e9;padding:12px;text-align:center;color:#8a90a0;font-size:11px">No snags recorded</td></tr>`;
+      snag += `<tr><td colspan="6" style="border:1px solid #e2e4e9;padding:12px;text-align:center;color:#8a90a0;font-size:11px">No snags recorded</td></tr>`;
     } else {
       currentSnags.forEach((snagItem, index) => {
+        const clearanceDate = snagItem.clearanceDate ? new Date(snagItem.clearanceDate).toLocaleDateString('en-GB') : '—';
         snag += `<tr style="${index%2?'':'background:#fff5f5'}">
           <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#9ca3af;font-size:11px">${index+1}</td>
           <td style="border:1px solid #e2e4e9;padding:3px 6px;font-size:12px;">${snagItem.desc||'N/A'}</td>
           <td style="border:1px solid #e2e4e9;padding:3px 6px;text-align:center;font-size:11px;">${snagItem.weight||0}</td>
           <td style="border:1px solid #e2e4e9;padding:3px 6px;font-size:11px;">${snagItem.department||snagItem.addedByDept||'N/A'}</td>
           <td style="border:1px solid #e2e4e9;padding:3px 6px;font-size:11px;">${snagItem.addedBy||'N/A'}</td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px;font-size:11px;">${clearanceDate}</td>
         </tr>`;
       });
       // Fill remaining rows if needed
@@ -2584,6 +2564,7 @@ function buildPATModal(projectData = null) {
           <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-wt" type="number" min="0" max="3" style="width:100%;border:none;outline:none;font-size:12px;text-align:center;font-family:inherit" placeholder="0" disabled></td>
           <td style="border:1px solid #e2e4e9;padding:3px 6px"><input style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" placeholder="Dept" disabled></td>
           <td style="border:1px solid #e2e4e9;padding:3px 6px"><input style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" placeholder="Name" disabled></td>
+          <td style="border:1px solid #e2e4e9;padding:3px 6px"><input type="date" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" disabled></td>
         </tr>`;
       }
     }
@@ -2592,7 +2573,7 @@ function buildPATModal(projectData = null) {
   snag += `<tr style="background:#fff5f5;font-weight:700">
     <td colspan="2" style="border:1px solid #e2e4e9;text-align:right;padding:6px 10px;font-size:12px">Total Snag Score:</td>
     <td id="pm-snag-total" style="border:1px solid #e2e4e9;text-align:center;font-size:14px;font-weight:700;color:#e5342a">0</td>
-    <td colspan="2" style="border:1px solid #e2e4e9"></td>
+    <td colspan="3" style="border:1px solid #e2e4e9"></td>
   </tr>`;
   snag += `</tbody></table>`;
   wrap.innerHTML += snag;
@@ -2633,6 +2614,31 @@ function renderProjectImages(projectId) {
   return html;
 }
 
+// Add new snag row to the snag list
+function addSnagRow() {
+  const tbody = document.getElementById('pm-snag-tbody');
+  if (!tbody) return;
+  
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myName = sessionStorage.getItem('sd_name') || '';
+  const rowCount = tbody.querySelectorAll('tr').length;
+  const nextRowNum = rowCount + 1;
+  
+  const newRow = document.createElement('tr');
+  newRow.style = nextRowNum % 2 ? '' : 'background:#fff5f5';
+  newRow.innerHTML = `
+    <td style="border:1px solid #e2e4e9;text-align:center;padding:4px;color:#9ca3af;font-size:11px">${nextRowNum}</td>
+    <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-desc" style="width:100%;border:none;outline:none;font-size:12px;font-family:inherit" placeholder="Describe snag..." onchange="updatePATScore()"></td>
+    <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-wt" type="number" min="0" max="3" style="width:100%;border:none;outline:none;font-size:12px;text-align:center;font-family:inherit" placeholder="0" onchange="updatePATScore()"></td>
+    <td style="border:1px solid #e2e4e9;padding:3px 6px;text-align:center;font-size:11px;">
+      <input class="pm-snag-dept" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" value="${myDept.charAt(0).toUpperCase() + myDept.slice(1)}" readonly>
+    </td>
+    <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-addedby" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" value="${myName}" readonly></td>
+    <td style="border:1px solid #e2e4e9;padding:3px 6px"><input class="pm-snag-clearance-date" type="date" style="width:100%;border:none;outline:none;font-size:11px;font-family:inherit" value="${new Date().toISOString().split('T')[0]}"></td>
+  `;
+  tbody.appendChild(newRow);
+}
+
 // Remove an image from a project
 window.removeProjectImage = function(projectId, imageIndex) {
   if (!projectImages[projectId] || !projectImages[projectId][imageIndex]) {
@@ -2668,13 +2674,16 @@ function selectPATAction(actionType) {
     return;
   }
   
-  // For approve action, directly open the assignment modal for better UX
-  if (actionType === 'approve') {
-    openAssignModal();
-    return;
-  }
-  
+  // Store the action type and open assignment modal for all actions
+  // This ensures consistent UX: select action, then select recipient, then submit
   currentPATAction = actionType;
+  
+  // Open assignment modal to select who to send to
+  openAssignModal();
+  
+  return;
+  
+  // OLD CODE - Now using assignment modal for all workflow actions
   const workflowSection = document.getElementById('pm-workflow-section');
   const actionDetails = document.getElementById('pm-action-details');
   const previewDiv = document.getElementById('pm-workflow-preview');
@@ -2863,7 +2872,7 @@ function submitPATAction() {
         nextDept = 'Project Team';
         break;
       case PAT_WORKFLOW_STATUS.AWAITING_PLANNING:
-        nextDept = 'Service Delivery';
+        nextDept = "Service Delivery / Metro";
         break;
       case PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY:
         nextDept = 'MEC';
@@ -2904,15 +2913,16 @@ function submitPATAction() {
   const recipientName = selectedOption ? selectedOption.textContent.replace(/ \(.*\)/, '') : nextEmail;
   
   // Determine target department for display
+  // ALL REJECTIONS go to Project Team (not MEC)
   let targetDept = '';
   if (myDept === 'mec' || myDept === 'mech') {
     targetDept = 'Project Team';
   } else if (myDept === 'project team' || myDept.includes('project')) {
-    targetDept = currentPATAction === 'reject' ? 'MEC' : 'Planning Team';
+    targetDept = currentPATAction === 'reject' ? 'Project Team' : 'Planning Team';
   } else if (myDept === 'planning team' || myDept.includes('planning')) {
-    targetDept = currentPATAction === 'reject' ? 'MEC' : 'SD Team';
-  } else if (myDept === 'sd team' || myDept.includes('sd')) {
-    targetDept = 'MEC';
+    targetDept = currentPATAction === 'reject' ? 'Project Team' : 'Service Delivery / Metro';
+  } else if (myDept.includes('service delivery') || myDept.includes('metro')) {
+    targetDept = currentPATAction === 'reject' ? 'Project Team' : 'MEC';
   }
   
   // Call the appropriate backend function based on action type
@@ -2956,16 +2966,17 @@ function submitPATAction() {
       }
     });
   } else if (currentPATAction === 'reject') {
-    // Reject with reason - send back to previous department
+    // Reject with reason - ALL REJECTIONS go to Project Team
     const reason = comments || prompt('Please provide reason for rejection:');
     if (!reason || reason.trim() === '') {
       alert('Reason is required for rejection.');
       return;
     }
     
-    gasCall('rejectPATWithReason', [projectId, reason], res => {
+    // All rejections go to Project Team
+    gasCall('submitPATToDepartment', [projectId, 'Project Team', 'REJECTED: ' + reason], res => {
       if (res.success) {
-        alert(`[OK] REJECTED: Project sent back to ${res.previousStatus}. Reason: ${reason}`);
+        alert(`[OK] REJECTED: Project sent to Project Team. Reason: ${reason}`);
         cancelPATAction();
         closePATModal();
         loadPATProjects(true);
@@ -3039,7 +3050,6 @@ function updateWorkflowUI(project) {
   if (workflowSection) {
     // Check if current user can perform workflow actions on this project
     const canPerformWorkflow = canEditCurrentProject();
-    // Also show workflow section for assigned users who can take actions (approve/reject)
     const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
     const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
     const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
@@ -3052,6 +3062,69 @@ function updateWorkflowUI(project) {
     // 3. User is admin
     const shouldShowWorkflow = canPerformWorkflow || isAssigned || myRole === 'admin' || myRole === 'super admin';
     workflowSection.style.display = shouldShowWorkflow && project ? 'block' : 'none';
+    
+    // For MEC, only show Save Draft and Submit to Project Team (NO approve/partial/reject)
+    // For other departments, show the full workflow options
+    const isMEC = myDept === 'mec' || myDept === 'mech';
+    const verdictOpts = workflowSection.querySelectorAll('.pm-verdict-opt');
+    if (verdictOpts.length > 0 && project) {
+      const currentOwnerDept = getCurrentOwnerDept();
+      const isMECOwner = currentOwnerDept === 'mec';
+      
+      // Hide approve/partial/reject for MEC - they only submit to Project Team
+      if (isMEC && isMECOwner && workflowStatus === PAT_WORKFLOW_STATUS.DRAFT) {
+        verdictOpts.forEach(opt => {
+          opt.style.display = 'none';
+        });
+      } else {
+        verdictOpts.forEach(opt => {
+          opt.style.display = 'flex';
+        });
+      }
+    }
+  }
+  
+  // Show "Submit to Project Team" button for MEC users on Draft
+  const btnWorkflow = document.getElementById('btn-workflow-action');
+  const btnDraft = document.getElementById('btn-save-draft');
+  const btnFinal = document.getElementById('btn-final-approve');
+
+  if (btnDraft) btnDraft.style.display = 'inline-flex';
+
+  if (project && (myDept === 'mec' || myDept === 'mech' || myRole === 'admin' || myRole === 'super admin')) {
+    const status = project.workflowStatus || 'Draft';
+    if (status === 'Draft' || status === 'Rejected') {
+      if (btnWorkflow) {
+        btnWorkflow.style.display = 'inline-flex';
+        btnWorkflow.textContent = 'Submit to Project Team';
+        btnWorkflow.onclick = () => {
+          currentPATAction = 'approve';
+          openAssignModal();
+        };
+      }
+    }
+    if (status === 'Awaiting Final MEC Review') {
+      if (btnFinal) btnFinal.style.display = 'inline-flex';
+    }
+  }
+  
+  function getCurrentOwnerDept() {
+    switch(workflowStatus) {
+      case PAT_WORKFLOW_STATUS.DRAFT:
+      case PAT_WORKFLOW_STATUS.REJECTED:
+      case PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC:
+        return 'mec';
+      case PAT_WORKFLOW_STATUS.AWAITING_PROJECT:
+        return 'project team';
+      case PAT_WORKFLOW_STATUS.AWAITING_PLANNING:
+        return 'planning team';
+      case PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY:
+        return 'service delivery';
+      case PAT_WORKFLOW_STATUS.COMPLETED:
+        return '';
+      default:
+        return '';
+    }
   }
   
   // Update action buttons based on workflow status and user permissions
@@ -3104,9 +3177,12 @@ function updateWorkflowActionButtons(workflowStatus, project) {
   // Show appropriate buttons based on status and ownership
   switch(workflowStatus) {
     case PAT_WORKFLOW_STATUS.DRAFT:
-      // MEC can save draft or submit to Project Team
+      // MEC can save draft (Submit to Project Team is handled by btn-workflow-action in updateWorkflowUI)
       if (isMEC || isAdmin) {
         document.getElementById('btn-save-draft').style.display = 'inline-flex';
+      }
+      // For non-MEC users on Draft (shouldn't happen, but just in case)
+      if (!isMEC && (myDept === currentOwnerDept || isAssignedToMe || isAdmin)) {
         document.getElementById('btn-submit-next').style.display = 'inline-flex';
       }
       break;
@@ -3260,13 +3336,15 @@ function collectPATData() {
   const snagWts   = [...document.querySelectorAll('.pm-snag-wt')].map(i=>i.value);
   const snagDepts = [...document.querySelectorAll('.pm-snag-dept')].map(i=>i.value);
   const snagAddedBy = [...document.querySelectorAll('.pm-snag-addedby')].map(i=>i.value);
+  const snagClearanceDates = [...document.querySelectorAll('.pm-snag-clearance-date')].map(i=>i.value);
   
-  // Create snags with department tracking
+  // Create snags with department tracking and clearance date
   const snags = snagDescs.map((d,i)=>({
     desc: d,
     weight: parseInt(snagWts[i])||0,
     department: snagDepts[i]||'',
     addedBy: snagAddedBy[i]||'',
+    clearanceDate: snagClearanceDates[i]||'',
     addedByEmail: sessionStorage.getItem('sd_email')||'',
     addedAt: new Date().toISOString()
   })).filter(r=>r.desc.trim());
@@ -3337,115 +3415,285 @@ function savePATForm(action = 'draft') {
 function openAssignModal() {
   const project = currentEditingProject;
   if (!project) {
-    alert("No project loaded for assignment.");
+    alert("No project loaded.");
     return;
   }
   
   const currentStatus = project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  const actionType = currentPATAction || 'approve';
   
-  // Get next stage users
-  gasCall('getNextStageUsers', [currentStatus], res => {
+  // Determine target department based on action type and current status
+  let targetDept = '';
+  if (actionType === 'reject') {
+    // Rejection: go back to Project Team (as per user request)
+    // If already at Project Team, go back to MEC
+    if (currentStatus === 'Awaiting Project Team' || currentStatus === 'Rejected') {
+      targetDept = 'MEC';
+    } else {
+      targetDept = 'Project Team';
+    }
+  } else {
+    // Approve / Partial: go to next department
+    switch(currentStatus) {
+      case 'Draft':
+      case 'Rejected':                 targetDept = 'Project Team'; break;
+      case 'Awaiting Project Team':    targetDept = 'Planning Team'; break;
+      case 'Awaiting Planning Team':   targetDept = 'Service Delivery / Metro'; break;
+      case 'Awaiting Service Delivery': targetDept = 'MEC'; break;
+      case 'Awaiting Final MEC Review': targetDept = 'MEC'; break;
+      default: targetDept = 'Project Team';
+    }
+  }
+  
+  gasCall('getUsersByDepartment', [targetDept], res => {
     if (!res.success) {
       alert("Error: " + res.message);
       return;
     }
     
-    const modalContent = document.getElementById('assign-modal-content');
-    const nextDept = res.nextDept || "Unknown Department";
+    const members = res.members || [];
+    const actionLabel = actionType === 'reject'
+      ? `Reject & Return to ${targetDept}`
+      : actionType === 'partial'
+        ? `Partially Approve & Send to ${targetDept}`
+        : `Approve & Send to ${targetDept}`;
+    
+    const commentsRequired = actionType === 'partial' || actionType === 'reject';
+    const actionColor = actionType === 'reject' ? '#fee2e2;color:#991b1b'
+                      : actionType === 'partial' ? '#fef9c3;color:#854d0e'
+                      : '#dcfce7;color:#166534';
     
     let html = `
       <div style="margin-bottom:16px">
-        <strong>Select who in <span style="color:#1a3faa">${nextDept}</span> should receive this PAT:</strong>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <strong>Send to <span style="color:#1a3faa">${targetDept}</span>:</strong>
+          <span class="status-pill" style="background:${actionColor};padding:3px 10px">${actionType.toUpperCase()}</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280">${actionLabel}</div>
       </div>
-      <div style="max-height:300px;overflow-y:auto;margin-bottom:16px">
+      <div style="max-height:280px;overflow-y:auto;margin-bottom:16px">
     `;
     
-    if (res.members && res.members.length > 0) {
-      // Add option to send to entire department
+    // "Send to entire department" option
+    if (members.length > 0) {
       html += `
-        <div style="padding:12px;margin-bottom:8px;background:#fff;border-radius:8px;border:2px solid #1a3faa;cursor:pointer;transition:.15s;font-weight:600;" 
-             onclick="submitToEntireDepartment('${nextDept}')" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
-          <div style="color:#1a3faa;font-size:14px">📤 Send to ALL ${res.members.length} members in ${nextDept}</div>
-          <div style="font-size:11px;color:#6b7280;margin-top:4px">Notify entire department at once</div>
+        <div style="padding:12px;margin-bottom:8px;background:#f0f4ff;border-radius:8px;border:2px solid #1a3faa;cursor:pointer"
+             onclick="submitToEntireDepartment('${targetDept}','${actionType}')"
+             onmouseover="this.style.background='#e0eaff'" onmouseout="this.style.background='#f0f4ff'">
+          <div style="color:#1a3faa;font-weight:700">Send to ALL ${members.length} member(s) in ${targetDept}</div>
+          <div style="font-size:11px;color:#6b7280">Notifies entire department</div>
         </div>
       `;
-      
-      res.members.forEach(member => {
+      members.forEach(m => {
         html += `
-          <div style="padding:10px;margin-bottom:8px;background:#f8fafc;border-radius:8px;border:1px solid #e2e4e9;cursor:pointer;transition:.15s" 
-               onclick="selectAssignee('${member.email}', '${member.name}', '${res.nextDept}')" onmouseover="this.style.borderColor='#1a3faa'" onmouseout="this.style.borderColor='#e2e4e9'">
-            <div style="font-weight:600;color:#0d1526">${member.name}</div>
-            <div style="font-size:12px;color:#8a90a0">${member.email}</div>
-            <div style="font-size:11px;color:#6b7280">${member.role} • ${member.department}</div>
+          <div style="padding:10px;margin-bottom:8px;background:#f8fafc;border-radius:8px;border:1px solid #e2e4e9;cursor:pointer"
+               onclick="selectAssignee('${m.email}','${m.name.replace(/'/g, "\\'")}','${targetDept}','${actionType}')"
+               onmouseover="this.style.borderColor='#1a3faa'" onmouseout="this.style.borderColor='#e2e4e9'">
+            <div style="font-weight:600;color:#0d1526">${m.name}</div>
+            <div style="font-size:12px;color:#8a90a0">${m.email} &bull; ${m.role}</div>
           </div>
         `;
       });
     } else {
-      html += `<div style="padding:16px;text-align:center;color:#8a90a0">No users found in ${nextDept}</div>`;
+      html += `<div style="padding:16px;text-align:center;color:#e5342a">No active users found in ${targetDept}</div>`;
     }
     
     html += `
       </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;color:#4a5568;margin-bottom:6px">
+          Comments ${commentsRequired ? '<span style="color:#e5342a">(Required)</span>' : '(Optional)'}:
+        </div>
+        <textarea id="assign-modal-comments" style="width:100%;min-height:80px;padding:10px;border:1px solid #e2e4e9;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"
+          placeholder="${commentsRequired ? 'Required: explain reason/notes...' : 'Optional comments...'}"></textarea>
+      </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="closeAssignModal()" style="padding:8px 16px;border:1px solid #e2e4e9;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">Cancel</button>
+        <button onclick="closeAssignModal()" style="padding:8px 16px;border:1px solid #e2e4e9;border-radius:8px;background:#fff;cursor:pointer">Cancel</button>
       </div>
     `;
     
-    modalContent.innerHTML = html;
+    document.getElementById('assign-modal-content').innerHTML = html;
     document.getElementById('assign-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('assign-modal-comments')?.focus(), 100);
   });
 }
 
 /**
  * Submit to entire department (called from assignment modal)
  */
-function submitToEntireDepartment(department) {
+function submitToEntireDepartment(department, actionType) {
   if (!currentEditingProject) {
     alert("No project loaded.");
     return;
   }
   
-  const comments = prompt("Add any comments for the " + department + " team (optional):");
+  const action = actionType || currentPATAction || 'approve';
+  const commentsEl = document.getElementById('assign-modal-comments');
+  const comments = commentsEl ? commentsEl.value.trim() : '';
   
-  gasCall('submitPATToDepartment', [
-    currentEditingProject.projectId,
-    department,
-    comments || ""
-  ], res => {
-    closeAssignModal();
-    if (res.success) {
-      alert(res.message);
-      closePATModal();
-      loadPATProjects(true); // Force refresh from sheet
+  if ((action === 'partial' || action === 'reject') && !comments) {
+    alert('Comments/reason are required for ' + action + '.');
+    commentsEl && commentsEl.focus();
+    return;
+  }
+  
+  closeAssignModal();
+  
+  const patData = collectPATData();
+  patData.projectId = currentEditingProject.projectId;
+  
+  gasCall('savePATProject', [patData], saveRes => {
+    if (!saveRes.success) {
+      alert("Save failed: " + saveRes.message);
+      return;
+    }
+    
+    const projectId = currentEditingProject.projectId;
+    
+    if (action === 'reject') {
+      gasCall('submitPATToDepartment', [projectId, department, 'REJECTED: ' + comments], res => {
+        if (res.success) {
+          alert('[OK] Rejected & returned to ' + department + '.\n' + res.message);
+          closePATModal();
+          closeProjectQuickView();
+          // Reset filter so user can see projects from previous department
+          document.getElementById('pat-status-filter').value = '';
+          loadPATProjects(true);
+        } else {
+          alert('[FAIL] ' + res.message);
+        }
+      });
+    } else if (action === 'partial') {
+      const snagDescs = [...document.querySelectorAll('.pm-snag-desc')].map(i => i.value);
+      const snagWts   = [...document.querySelectorAll('.pm-snag-wt')].map(i => i.value);
+      const snagDepts = [...document.querySelectorAll('.pm-snag-dept')].map(i => i.value);
+      const snagBy    = [...document.querySelectorAll('.pm-snag-addedby')].map(i => i.value);
+      const snagDates = [...document.querySelectorAll('.pm-snag-clearance-date')].map(i => i.value);
+      const newSnags = snagDescs.map((d,i) => ({
+        desc: d, weight: parseInt(snagWts[i])||0,
+        department: snagDepts[i]||'', addedBy: snagBy[i]||'',
+        clearanceDate: snagDates[i]||'',
+        addedByEmail: sessionStorage.getItem('sd_email')||'',
+        addedAt: new Date().toISOString()
+      })).filter(r => r.desc.trim());
+      
+      gasCall('partiallyApprovePAT', [projectId, comments, newSnags], res => {
+        if (res.success) {
+          alert('[OK] Partially approved.\nVerdict: ' + res.verdict + ' | Score: ' + res.snagScore);
+          closePATModal();
+          closeProjectQuickView();
+          // Reset filter so next department can see it
+          document.getElementById('pat-status-filter').value = '';
+          loadPATProjects(true);
+        } else {
+          alert('[FAIL] ' + res.message);
+        }
+      });
     } else {
-      alert("Error: " + res.message);
+      gasCall('submitPATToDepartment', [projectId, department, comments], res => {
+        if (res.success) {
+          alert('[OK] Sent to all of ' + department + '.\n' + res.message);
+          closePATModal();
+          closeProjectQuickView();
+          // Reset filter so next department can see it
+          document.getElementById('pat-status-filter').value = '';
+          loadPATProjects(true);
+        } else {
+          alert('[FAIL] ' + res.message);
+        }
+      });
     }
   });
 }
 
 /**
- * Select assignee and submit to next stage
+ * Select assignee and submit to next stage with action type
  */
-function selectAssignee(email, name, nextDept) {
+function selectAssignee(email, name, nextDept, actionType) {
   if (!currentEditingProject) {
     alert("No project loaded.");
     return;
   }
   
-  const comments = prompt("Add any comments for the next team (optional):");
+  const action = actionType || currentPATAction || 'approve';
+  const commentsEl = document.getElementById('assign-modal-comments');
+  const comments = commentsEl ? commentsEl.value.trim() : '';
   
-  gasCall('submitPATToNextStage', [
-    currentEditingProject.projectId,
-    email,
-    comments || ""
-  ], res => {
-    closeAssignModal();
-    if (res.success) {
-      alert(res.message);
-      closePATModal();
-      loadPATProjects(true); // Force refresh from sheet
+  if ((action === 'partial' || action === 'reject') && !comments) {
+    alert('Comments/reason are required for ' + action + '.');
+    commentsEl && commentsEl.focus();
+    return;
+  }
+  
+  closeAssignModal();
+  
+  // Save first, then submit
+  const patData = collectPATData();
+  patData.projectId = currentEditingProject.projectId;
+  
+  gasCall('savePATProject', [patData], saveRes => {
+    if (!saveRes.success) {
+      alert("Save failed: " + saveRes.message);
+      return;
+    }
+    
+    const projectId = currentEditingProject.projectId;
+    
+    if (action === 'reject') {
+      // Use submitPATToDepartment with REJECTED prefix
+      gasCall('submitPATToDepartment', [projectId, nextDept, 'REJECTED: ' + comments], res => {
+        if (res.success) {
+          alert('[OK] Rejected & returned to ' + nextDept + '.\n' + res.message);
+          closePATModal();
+          closeProjectQuickView();
+          // Reset filter so user can see projects from previous department
+          document.getElementById('pat-status-filter').value = '';
+          loadPATProjects(true);
+        } else {
+          alert('[FAIL] ' + res.message);
+        }
+      });
+    } else if (action === 'partial') {
+      // Collect snags then partially approve
+      const snagDescs = [...document.querySelectorAll('.pm-snag-desc')].map(i => i.value);
+      const snagWts   = [...document.querySelectorAll('.pm-snag-wt')].map(i => i.value);
+      const snagDepts = [...document.querySelectorAll('.pm-snag-dept')].map(i => i.value);
+      const snagBy    = [...document.querySelectorAll('.pm-snag-addedby')].map(i => i.value);
+      const snagDates = [...document.querySelectorAll('.pm-snag-clearance-date')].map(i => i.value);
+      const newSnags = snagDescs.map((d,i) => ({
+        desc: d, weight: parseInt(snagWts[i])||0,
+        department: snagDepts[i]||'', addedBy: snagBy[i]||'',
+        clearanceDate: snagDates[i]||'',
+        addedByEmail: sessionStorage.getItem('sd_email')||'',
+        addedAt: new Date().toISOString()
+      })).filter(r => r.desc.trim());
+      
+      gasCall('partiallyApprovePAT', [projectId, comments, newSnags], res => {
+        if (res.success) {
+          alert('[OK] Partially approved.\nVerdict: ' + res.verdict + ' | Score: ' + res.snagScore);
+          closePATModal();
+          closeProjectQuickView();
+          // Reset filter so next department can see it
+          document.getElementById('pat-status-filter').value = '';
+          loadPATProjects(true);
+        } else {
+          alert('[FAIL] ' + res.message);
+        }
+      });
     } else {
-      alert("Error: " + res.message);
+      // Full approve — assign to specific person
+      gasCall('submitPATToNextStage', [projectId, email, comments], res => {
+        if (res.success) {
+          alert('[OK] Approved & sent to ' + name + ' (' + nextDept + ').\n' + res.message);
+          closePATModal();
+          closeProjectQuickView();
+          // Reset filter to show all statuses
+          document.getElementById('pat-status-filter').value = '';
+          loadPATProjects(true);
+        } else {
+          alert('[FAIL] ' + res.message);
+        }
+      });
     }
   });
 }
@@ -3455,6 +3703,35 @@ function selectAssignee(email, name, nextDept) {
  */
 function closeAssignModal() {
   document.getElementById('assign-modal').style.display = 'none';
+}
+
+/**
+ * Submit to Project Team (for MEC users in Draft status)
+ */
+function submitToProjectTeam() {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  // Set action type to approve (MEC submitting to Project Team)
+  currentPATAction = 'approve';
+  
+  // Open assignment modal to select who in Project Team
+  openAssignModal();
+}
+
+/**
+ * Open workflow action for non-MEC users
+ */
+function openWorkflowAction() {
+  if (!currentEditingProject) {
+    alert("No project loaded.");
+    return;
+  }
+  
+  // For non-MEC users, show the workflow options
+  selectPATAction('approve');
 }
 
 /**
@@ -3491,15 +3768,17 @@ function rejectPATWithReason() {
     return;
   }
   
-  const reason = prompt("REQUIRED: Reason for rejection (this will send the PAT back to the previous department):");
+  const reason = prompt("REQUIRED: Reason for rejection (this will send the PAT to Project Team):");
   if (!reason || reason.trim() === "") {
     alert("You must provide a reason for rejection.");
     return;
   }
   
-  gasCall('rejectPATWithReason', [
+  // All rejections go to Project Team
+  gasCall('submitPATToDepartment', [
     currentEditingProject.projectId,
-    reason
+    'Project Team',
+    'REJECTED: ' + reason
   ], res => {
     if (res.success) {
       alert(res.message);
@@ -3575,7 +3854,7 @@ function submitToNextDepartment() {
       nextDept = "Project Team";
       break;
     case PAT_WORKFLOW_STATUS.AWAITING_PLANNING:
-      nextDept = "Service Delivery";
+      targetDept = 'Service Delivery / Metro';
       break;
     case PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY:
       nextDept = "MEC";
@@ -3795,6 +4074,8 @@ function renderPATTable(projects) {
 function filterPATProjects() {
   const searchQ = document.getElementById("pat-search").value.toLowerCase().trim();
   const statusFilter = document.getElementById("pat-status-filter").value;
+  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
+  const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
   
   let filtered = allPATProjects;
   
@@ -3807,13 +4088,40 @@ function filterPATProjects() {
       (p.vendor||'').toLowerCase().includes(searchQ) ||
       (p.phase||'').toLowerCase().includes(searchQ) ||
       (p.submittedBy||'').toLowerCase().includes(searchQ) ||
-      (p.assignedToName||'').toLowerCase().includes(searchQ)
+      (p.assignedToName||'').toLowerCase().includes(searchQ) ||
+      (p.assignedToEmail||'').toLowerCase().includes(searchQ)
     );
   }
   
-  // Filter by status
-  if(statusFilter){
+  // Filter by status - show all if no filter selected
+  // For Project Team, Planning Team, Service Delivery users, also show their assigned projects
+  if(statusFilter && statusFilter !== 'All Statuses'){
     filtered = filtered.filter(p => p.workflowStatus === statusFilter);
+  } else {
+    // If no specific status filter and not searching, show projects relevant to user's department
+    // unless user is admin
+    const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+    const isAdmin = myRole === 'admin' || myRole === 'super admin';
+    
+    if(!searchQ && !isAdmin){
+      // Show projects awaiting this department OR assigned to this user
+      filtered = filtered.filter(p => {
+        const assignedDept = (p.assignedToDept || '').toLowerCase();
+        const assignedEmail = (p.assignedToEmail || '').toLowerCase();
+        const status = p.workflowStatus || '';
+        
+        // Show if: awaiting this department, OR assigned to this user, OR submitted by this user
+        const deptMatch = (
+          (myDept === 'project team' && status === 'Awaiting Project Team') ||
+          (myDept === 'planning team' && status === 'Awaiting Planning Team') ||
+          (myDept.includes('service') && (status === 'Awaiting Service Delivery' || status === 'Awaiting Service Delivery / Metro')) ||
+          (myDept === 'mec' || myDept === 'mech') && (status === 'Draft' || status === 'Rejected' || status === 'Awaiting Final MEC Review')
+        );
+        const userMatch = assignedEmail === myEmail || (p.submittedByEmail || '').toLowerCase() === myEmail;
+        
+        return deptMatch || userMatch;
+      });
+    }
   }
   
   // Always render table view
@@ -3829,31 +4137,58 @@ function closeProjectQuickView() {
 
 // Quick workflow actions from project quick view
 function quickApproveProject(projectId) {
-  closeProjectQuickView();
-  loadAndApproveProject(projectId, 'approve');
+  // Check if user can perform workflow actions
+  gasCall('getPATProjectById', [projectId], res => {
+    if (res.success) {
+      const project = res.project;
+      if (!canPerformWorkflowAction(project)) {
+        alert('You do not have permission to approve this project. Only the assigned department can perform workflow actions.');
+        return;
+      }
+      currentPATAction = 'approve';
+      currentEditingProject = project;
+      closeProjectQuickView();
+      openAssignModal();
+    } else {
+      alert('Error: ' + res.message);
+    }
+  });
 }
 
 function quickPartialApproveProject(projectId) {
-  closeProjectQuickView();
-  loadAndApproveProject(projectId, 'partial');
+  // Check if user can perform workflow actions
+  gasCall('getPATProjectById', [projectId], res => {
+    if (res.success) {
+      const project = res.project;
+      if (!canPerformWorkflowAction(project)) {
+        alert('You do not have permission to partially approve this project. Only the assigned department can perform workflow actions.');
+        return;
+      }
+      currentPATAction = 'partial';
+      currentEditingProject = project;
+      closeProjectQuickView();
+      openAssignModal();
+    } else {
+      alert('Error: ' + res.message);
+    }
+  });
 }
 
 function quickRejectProject(projectId) {
-  closeProjectQuickView();
-  loadAndApproveProject(projectId, 'reject');
-}
-
-function loadAndApproveProject(projectId, actionType) {
+  // Check if user can perform workflow actions
   gasCall('getPATProjectById', [projectId], res => {
     if (res.success) {
-      currentEditingProject = res.project;
-      openPATForm(false, currentEditingProject);
-      // Select the action after form loads
-      setTimeout(() => {
-        selectPATAction(actionType);
-      }, 100);
+      const project = res.project;
+      if (!canPerformWorkflowAction(project)) {
+        alert('You do not have permission to reject this project. Only the assigned department can perform workflow actions.');
+        return;
+      }
+      currentPATAction = 'reject';
+      currentEditingProject = project;
+      closeProjectQuickView();
+      openAssignModal();
     } else {
-      alert('Error loading project: ' + res.message);
+      alert('Error: ' + res.message);
     }
   });
 }
@@ -4080,7 +4415,7 @@ function showProjectQuickView(project) {
           <i class="ti ti-trash"></i> Delete
         </button>
       ` : ''}
-      ${canEditCurrentProject() ? `
+      ${canPerformWorkflowAction(project) ? `
         <button class="btn-primary" style="padding:10px 24px;background:#166534" onclick="quickApproveProject('${project.projectId}')" title="Approve and move to next stage">
           <i class="ti ti-check"></i> Approve
         </button>
