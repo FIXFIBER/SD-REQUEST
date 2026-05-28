@@ -1384,17 +1384,20 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             });
         });
 
-        // Build context
-        const superAdminsCount = globalUsersData.filter(u => u.role === 'super admin').length;
-        const adminsCount = globalUsersData.filter(u => u.role === 'admin').length;
-        const mecCount = globalUsersData.filter(u => String(u.department).toLowerCase() === 'mec').length;
-        const userCtx = `Total Users: ${globalUsersData.length} (Super Admins: ${superAdminsCount}, Standard Admins: ${adminsCount}, MEC: ${mecCount})
-Directory:
-${globalUsersData.length > 0 ? globalUsersData.map(u => `- ${u.name} (${u.email}) | Role: ${u.role} | Dept: ${u.department} | Gender: ${u.gender} | ID: ${u.userId} | Status: ${u.status} | Last Login: ${u.lastLoginAt || 'Never'} | Notes: ${u.workflowNotes || 'None'}`).join('\n') : "No users found."}`;
+        // Build system prompt with context
+        // Limit context to prevent token overflow
+        const recentUsers = globalUsersData.slice(-20); // Last 20 users
+        const recentProjects = freshPATProjects.slice(-10); // Last 10 projects
+        
+        const userCtx = globalUsersData.length > 0 
+            ? `Total Users: ${globalUsersData.length}\nRecent Users:\n${recentUsers.map(u => `- ${u.name} (${u.email}) | Role: ${u.role} | Dept: ${u.department}`).join('\n')}`
+            : "No users found.";
+        
         const deptCtx = `Active Depts: ${globalDeptsData.map(d => d.name).join(', ')}.`;
-        const patSummary = freshPATProjects.length > 0 
-            ? `System PAT Records (${freshPATProjects.length} total):\n` + freshPATProjects.slice(0, 10).map(p => `- [${p.projectId}] ${p.projectName}: Dept: ${p.department || 'N/A'}, Status: ${p.workflowStatus || p.status}, Assigned: ${p.assignedToDept || 'Unassigned'}, Score: ${p.snagScore}, Verdict: ${p.verdict}, Vendor: ${p.vendor}`).join('\n')
-            : "No PAT projects found in the system records.";
+        
+        const patSummary = recentProjects.length > 0
+            ? `Recent PAT Projects:\n` + recentProjects.map(p => `- [${p.projectId}] ${p.projectName}: Status: ${p.workflowStatus || p.status}, Score: ${p.snagScore}, Verdict: ${p.verdict}`).join('\n')
+            : "No PAT projects found.";
 
         const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband — the central nervous system for internal infrastructure and administrative control.
         
@@ -1989,8 +1992,7 @@ BEHAVIOR:
         }
 
         // ── COHERE VISION API ────────────────────────────────────
-    async function tryCohereVision(message, imageAttachments) {
-        // Wrapper for the actual vision API call to avoid conflict with outer function name
+    async function tryCohereVision() {
         async function callVisionAPI() {
             const msgs = [{ role: "system", content: systemPrompt }];
 
@@ -2090,21 +2092,29 @@ BEHAVIOR:
         try {
             let data, loopCount = 0;
 
+            // Add timeout to prevent hanging
+            const aiCallTimeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("AI response timeout after 30 seconds")), 30000)
+            );
+
             while (loopCount < 3) {
                 try {
                     // Use Vision API if images are attached, otherwise text API
                     if (imageAttachments.length > 0) {
-                        data = await callVisionAPI();
+                        data = await Promise.race([tryCohereVision(), aiCallTimeout]);
                     } else {
-                        data = await tryCohereText();
+                        data = await Promise.race([tryCohereText(), aiCallTimeout]);
                     }
                 } catch (e) {
                     console.error("Primary AI error:", e);
                     addSystemNote("Primary AI busy → using backup engine", false);
                     try {
-                        data = await tryOpenRouter();
+                        data = await Promise.race([tryOpenRouter(), aiCallTimeout]);
                     } catch(backupErr) {
-                        throw new Error("All AI engines failed. Please try again.");
+                        console.error("Backup AI error:", backupErr);
+                        // Remove thinking message before throwing
+                        if (thinkingMsg.parentNode) thinkingMsg.remove();
+                        throw new Error("All AI engines failed or timed out. Please try again. " + (e.message || backupErr.message));
                     }
                 }
 
@@ -2134,11 +2144,26 @@ BEHAVIOR:
                         else addSystemNote(`[FAIL] ${cmd.type} failed: ${res.message}`, true);
                     }
 
-                    chatHistory.push({ role: "assistant", content: aiReply });
-                    chatHistory.push({ role: "user", content: `SYSTEM_FEEDBACK: ${results.join(' | ')}` });
-                    loopCount++;
+                    // Don't push SYSTEM_FEEDBACK to chatHistory - just show the cleaned AI reply
+                    if (thinkingMsg.parentNode) thinkingMsg.remove();
+                    const historyContent = cleanReply.trim() || "Done.";
+                    
+                    // Show both the AI response and the command results
+                    let finalMessage = historyContent;
+                    if (results.length > 0) {
+                        finalMessage += `\n\n[SYSTEM FEEDBACK]: ${results.join(' | ')}`;
+                    }
+                    
+                    chatHistory.push({ role: "assistant", content: historyContent });
+
+                    const botMsg = document.createElement('div');
+                    botMsg.className = 'msg bot';
+                    botMsg.innerHTML = finalMessage.replace(/\n/g, '<br>');
+                    chatMessages.appendChild(botMsg);
+                    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+                    
                     loadAllData();
-                    continue; 
+                    break;
                 } else {
                     if (thinkingMsg.parentNode) thinkingMsg.remove();
                     const historyContent = cleanReply.trim() || "Done.";
@@ -2148,6 +2173,7 @@ BEHAVIOR:
                     botMsg.className = 'msg bot';
                     botMsg.innerHTML = historyContent;
                     chatMessages.appendChild(botMsg);
+                    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
                     break;
                 }
             }
