@@ -1566,16 +1566,24 @@ If asked to create "System Accounts" for testing, create one for each department
 EXAMPLE COMMANDS FOR USER REQUESTS:
 - User: "move SD Test Account to Service Delivery / Metro"
   AI Should: First call GET_USER_BY_EMAIL to find sd-test@fob.ng's userId, then use UPDATE_USER
-  AI Output: 
-  ```json-cmd [{"type": "GET_USER_BY_EMAIL", "params": {"email": "sd-test@fob.ng"}}]```
-  Then: ```json-cmd [{"type": "UPDATE_USER", "params": {"userId": "RETURNED_USER_ID", "updates": {"dept": "Service Delivery / Metro"}}} ]```
+  AI Output:
+  ```json-cmd
+  [{"type": "GET_USER_BY_EMAIL", "params": {"email": "sd-test@fob.ng"}}]
+  ```
+  Then:
+  ```json-cmd
+  [{"type": "UPDATE_USER", "params": {"userId": "RETURNED_USER_ID", "updates": {"dept": "Service Delivery / Metro"}}}]
+  ```
   
 - User: "update sd-test@fob.ng department to Planning Team"
   AI Should: Look up user by email first, then update
-  AI Output: GET_USER_BY_EMAIL then UPDATE_USER
+  AI Output: First GET_USER_BY_EMAIL, then UPDATE_USER with the returned userId
   
 - User: "make me an admin"
-  AI Output: ```json-cmd [{"type": "UPDATE_USER_ROLE", "params": {"userId": "CURRENT_USER_ID", "role": "admin"}}]```
+  AI Output:
+  ```json-cmd
+  [{"type": "UPDATE_USER_ROLE", "params": {"userId": "CURRENT_USER_ID", "role": "admin"}}]
+  ```
 
 USER UPDATE WORKFLOW:
 When user requests to update a user by email:
