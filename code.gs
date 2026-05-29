@@ -2104,7 +2104,7 @@ function getPATProjects(token) {
       
       var projectWorkflowStatus = r[13] || "";
       var projectAssignedToEmail = r[17] || "";
-      var projectAssignedToDept = r[19] || "";
+      var projectAssignedToDept = r[18] || "";
       var projectSubmittedByEmail = r[11] || "";
       
       // Super admins see everything
