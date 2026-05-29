@@ -1042,6 +1042,42 @@ function getUsersByDepartment(token, departmentName) {
 }
 
 /**
+ * Get user by email address
+ * @param {string} token
+ * @param {string} email - User email to find
+ * @returns {{ success, user: Object }}
+ */
+function getUserByEmail(token, email) {
+  try {
+    _session(token); // Validate token
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SD.USERS);
+    var lastRow = sh.getLastRow();
+    if (lastRow < 2) return { success: false, message: "No users found", user: null };
+
+    var data = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn()).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][2]).toLowerCase() === String(email).toLowerCase()) {
+        return {
+          success: true,
+          user: {
+            userId: data[i][0],
+            name: data[i][1],
+            email: data[i][2],
+            role: data[i][5],
+            department: data[i][6],
+            gender: data[i][7],
+            status: data[i][9]
+          }
+        };
+      }
+    }
+    return { success: false, message: "User not found", user: null };
+  } catch(e) {
+    return { success: false, message: e.message, user: null };
+  }
+}
+
+/**
  * Get users for the next workflow stage
  * Flow: Draft -> Project Team -> Planning Team -> Service Delivery -> Final MEC
  * @param {string} token
@@ -1132,6 +1168,7 @@ function handleRequest(e) {
       case "deletePATProject": result = deletePATProject.apply(null, args); break;
       case "deleteAllPATProjects": result = deleteAllPATProjects.apply(null, args); break;
       case "getUsersByDepartment": result = getUsersByDepartment.apply(null, args); break;
+      case "getUserByEmail": result = getUserByEmail.apply(null, args); break;
       case "getNextStageUsers": result = getNextStageUsers.apply(null, args); break;
       case "submitPATToNextStage": result = submitPATToNextStage.apply(null, args); break;
       case "rejectPAT": result = rejectPAT.apply(null, args); break;
