@@ -1567,9 +1567,11 @@ COMMAND LIST (EXECUTE IMMEDIATELY ON REQUEST):
 
 📊 SYSTEM COMMANDS:
 - CREATE_DEPT: {"name"} - Creates new department
-- REFRESH_SYSTEM_DATA: {} - Forces full data refresh
+- REFRESH_SYSTEM_DATA: {} - Forces full data refresh from database
 - LIST_PAT_PROJECTS: {} - Lists all PAT projects (bypasses cache)
 - GET_PAT_STATUS: {} - Returns comprehensive project status overview
+- SYNC_ALL_SYSTEM_DATA: {} - Fetches ALL system data (users, depts, PAT projects) from database and updates AI context
+- REFRESH_ALL_CACHE: {} - Clears all frontend caches and reloads everything from database
 
 🖼️ IMAGE COMMANDS:
 - ADD_IMAGE_TO_PROJECT: {"projectId": "FOB-XXXXX", "caption"?} - Adds images to project
@@ -1746,7 +1748,11 @@ DEPARTMENT TRANSITIONS:
 5. For signoff: extract team names if mentioned
 6. Calculate verdict based on snag rules (Any CR=NOK or score >= 3 = REJECTED)
 
-SYNCHRONIZATION NOTE: If the user mentions that a project exists in the app but not in the database, or if they say they deleted something from the database but it still appears in the app, USE THE LIST_PAT_PROJECTS command FIRST to get the current state from the system records. This ensures you're working with fresh data.
+SYNCHRONIZATION NOTE: If the user mentions that a project exists in the app but not in the database, or if they say they deleted something from the database but it still appears in the app, USE THE SYNC_ALL_SYSTEM_DATA command FIRST to get the current state from all system records. This ensures you're working with FRESH, ACCURATE data from the database.
+
+AUTO-SYNC RULE: When you detect any potential data staleness, immediately use SYNC_ALL_SYSTEM_DATA to fetch the latest information from the database. Then use the fresh data to provide accurate responses. NEVER work with stale or cached data when the user indicates things might have changed.
+
+SYSTEM DATA ACCESS: You have DIRECT ACCESS to all system data. Use SYNC_ALL_SYSTEM_DATA to fetch everything at once, or use individual commands (LIST_PAT_PROJECTS, getUsers, getDepartments) for specific data. Always verify data freshness before responding.
 
 INTELLIGENCE & CONVERSATION:
 - Be EXTREMELY proactive. When a user gives a clear instruction, EXECUTE IT IMMEDIATELY using the appropriate json-cmd.
@@ -1965,7 +1971,45 @@ async function callOpenRouter(userMessage, systemPrompt, chatHistory) {
                     }
                 case 'REFRESH_SYSTEM_DATA':
                     refreshAllData();
-                    return { success: true, message: 'System data re-synchronized. All UI modules and AI context updated.' };
+                    return { success: true, message: 'System data re-synchronized. All UI modules and AI context updated from database.' };
+                case 'SYNC_ALL_SYSTEM_DATA':
+                    // Fetch all data: users, departments, PAT projects
+                    const syncResults = {
+                        users: [],
+                        departments: [],
+                        patProjects: []
+                    };
+                    
+                    try {
+                        const usersRes = await gasCallAsync('getUsers', []);
+                        if (usersRes.success) syncResults.users = usersRes.users;
+                        
+                        const deptsRes = await gasCallAsync('getDepartments', []);
+                        if (deptsRes.success) syncResults.departments = deptsRes.departments;
+                        
+                        const patRes = await gasCallAsync('getPATProjects', []);
+                        if (patRes.success) syncResults.patProjects = patRes.projects;
+                        
+                        // Update global caches
+                        globalUsersData = syncResults.users;
+                        globalDeptsData = syncResults.departments;
+                        allPATProjects = syncResults.patProjects;
+                        
+                        return {
+                            success: true,
+                            message: `Full system sync complete. Loaded ${syncResults.users.length} users, ${syncResults.departments.length} departments, ${syncResults.patProjects.length} PAT projects from database.`,
+                            data: syncResults
+                        };
+                    } catch(e) {
+                        return { success: false, message: 'Sync failed: ' + e.message };
+                    }
+                case 'REFRESH_ALL_CACHE':
+                    // Clear all caches and reload
+                    allPATProjects = [];
+                    globalUsersData = [];
+                    globalDeptsData = [];
+                    refreshAllData();
+                    return { success: true, message: 'All caches cleared. Full refresh from database initiated.' };
                 case 'DELETE_PAT_PROJECT':
                     {
                         if (!cmd.params || !cmd.params.projectId) {
