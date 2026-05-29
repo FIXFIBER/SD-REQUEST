@@ -915,22 +915,41 @@ function adminDeleteUser(token, userId) {
 /**
  * Edits user details in the sheet.
  */
-function adminUpdateUser(token, userId, updates) {
+function adminUpdateUser(token, userIdOrEmail, updates) {
   try {
     _superAdminSession(token);
     var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SD.USERS);
     var data = sh.getDataRange().getValues();
+    var targetRow = -1;
+    
+    // Try to find by userId first
     for (var i = 1; i < data.length; i++) {
-      if (data[i][0] === userId) {
-        if (updates.name) sh.getRange(i+1, 2).setValue(updates.name);
-        if (updates.email) sh.getRange(i+1, 3).setValue(updates.email);
-        if (updates.role) sh.getRange(i+1, 6).setValue(updates.role);
-        if (updates.department) sh.getRange(i+1, 7).setValue(updates.department);
-        if (updates.gender) sh.getRange(i+1, 8).setValue(updates.gender);
-        return { success: true, message: "User updated in sheet." };
+      if (data[i][0] === userIdOrEmail) {
+        targetRow = i;
+        break;
       }
     }
-    throw new Error("User not found.");
+    
+    // If not found by userId, try by email
+    if (targetRow === -1) {
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][2]).toLowerCase() === String(userIdOrEmail).toLowerCase()) {
+          targetRow = i;
+          break;
+        }
+      }
+    }
+    
+    if (targetRow === -1) {
+      throw new Error("User not found. Tried both userId and email: " + userIdOrEmail);
+    }
+    
+    if (updates.name) sh.getRange(targetRow+1, 2).setValue(updates.name);
+    if (updates.email) sh.getRange(targetRow+1, 3).setValue(updates.email);
+    if (updates.role) sh.getRange(targetRow+1, 6).setValue(updates.role);
+    if (updates.department) sh.getRange(targetRow+1, 7).setValue(updates.department);
+    if (updates.gender) sh.getRange(targetRow+1, 8).setValue(updates.gender);
+    return { success: true, message: "User updated in sheet." };
   } catch(e) {
     return { success: false, message: e.message };
   }

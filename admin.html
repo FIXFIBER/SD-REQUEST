@@ -1578,11 +1578,19 @@ COMMAND LIST (EXECUTE IMMEDIATELY ON REQUEST):
 - SHARE_IDRIS_DASHBOARD: {"email": "user@fob.ng", "durationMinutes": 5} - Shares dashboard temporarily
 - GET_SHARED_DASHBOARD: {} - Retrieves shared dashboard if access granted
 
-SYSTEM ACCOUNT SETUP:
+SYSTEM ACCOUNT SETUP & KNOWN USER IDS:
 If asked to create "System Accounts" for testing, create one for each department (MEC, Project Team, Planning Team, Service Delivery / Metro) with:
 - Role: admin
 - Password: [empty or "system"]
 - Emails: mec-test@fob.ng, project-test@fob.ng, planning-test@fob.ng, sd-test@fob.ng
+
+KNOWN SYSTEM ACCOUNTS (for direct commands):
+- UPDATE_USER now accepts EMAIL in place of userId for system accounts
+- For sd-test@fob.ng, project-test@fob.ng, planning-test@fob.ng, mec-test@fob.ng: use email directly
+- Example: UPDATE_USER with userId: "sd-test@fob.ng" will work (backend looks up by email)
+- No need for GET_USER_BY_EMAIL for known system accounts - use UPDATE_USER directly with email
+
+IMPORTANT: UPDATE_USER accepts BOTH userId AND email. For system accounts, use the email directly.
 
 EXAMPLE COMMANDS FOR USER REQUESTS:
 - User: "move SD Test Account to Service Delivery / Metro"
@@ -1902,6 +1910,8 @@ async function callOpenRouter(userMessage, systemPrompt, chatHistory) {
             switch (cmd.type) {
                 case 'CREATE_USER':
                     return await gasCallAsync('adminCreateUser', [cmd.params.name, cmd.params.email, cmd.params.password, cmd.params.dept, cmd.params.role, cmd.params.gender || 'Other']);
+                case 'GET_USER_BY_EMAIL':
+                    return await gasCallAsync('getUserByEmail', [cmd.params.email]);
                 case 'UPDATE_USER_ROLE':
                     return await gasCallAsync('updateUserRole', [cmd.params.userId, cmd.params.role]);
                 case 'UPDATE_USER':
