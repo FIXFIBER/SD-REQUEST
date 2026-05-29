@@ -278,7 +278,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             <button class="btn-primary" onclick="openPATForm()" id="new-pat-btn">
               <i class="ti ti-plus"></i> New PAT
             </button>
-            <button class="btn-primary" onclick="forceRefreshPATProjects()" style="background:#166534" title="Refresh from Sheet">
+            <button class="btn-primary" onclick="forceRefreshPATProjects()" style="background:#166534" title="Refresh from Database">
               <i class="ti ti-refresh"></i> Refresh
             </button>
           </div>
@@ -843,7 +843,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
     // Global refresh function that reloads all data including PAT projects
     function refreshAllData() {
         loadAllData();
-        loadPATProjects(true); // Force refresh from sheet
+        loadPATProjects(true); // Force refresh from database
         // Also refresh the AI context by reloading PAT data
         const chatMessages = document.getElementById('admin-chat-messages');
         if (chatMessages) {
@@ -855,7 +855,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         }
     }
 
-    // Load Real Data from Sheet
+    // Load Real Data from Database
     window.onload = () => {
         // Setup User Identity
         const storedName = sessionStorage.getItem('sd_name') || 'Admin User';
@@ -1065,7 +1065,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         if (!confirm("Are you sure you want to PERMANENTLY delete this user? This row will be removed from the sheet.")) return;
         gasCall('adminDeleteUser', [userId], res => {
             if (res.success) {
-                alert('User deleted from sheet.');
+                alert('User deleted from database.');
                 loadAllData();
             } else {
                 alert('Error deleting user: ' + res.message);
@@ -1471,8 +1471,8 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
         };
 
         // Ensure we have fresh PAT project data for AI context
-        // This prevents the issue where projects are deleted from sheet but not from app cache
-        // Always fetch fresh data from the server to avoid cache stale issues
+        // This prevents the issue where projects are deleted from database but not from app cache
+        // Always fetch fresh data from the system to avoid cache stale issues
         console.log('[SYSTEM] Fetching fresh PAT projects data for AI context...');
         const freshPATProjects = await new Promise((resolve) => {
             gasCall('getPATProjects', [], res => {
@@ -1504,13 +1504,13 @@ body{font-family:'DM Sans',sans-serif;background:#f5f6fa;min-height:100vh;overfl
             ? `Recent PAT Projects:\n` + recentProjects.map(p => `- [${p.projectId}] ${p.projectName}: Status: ${p.workflowStatus || p.status}, Score: ${p.snagScore}, Verdict: ${p.verdict}`).join('\n')
             : "No PAT projects found.";
 
-        const systemPrompt = `CORE IDENTITY: You are the SD-AI Hyper-Intelligence for FiberOne Broadband. You are the most advanced, sophisticated, proactive, and highly intelligent administrative partner. You DO NOT just respond - YOU ACT. You EXECUTE commands immediately when given clear instructions.
+        const systemPrompt = `CORE IDENTITY: You are the SD-AI ULTIMATE INTELLIGENCE for FiberOne Broadband. You are the MOST ADVANCED, ULTRA-SOPHISTICATED, PROACTIVE, HYPER-INTELLIGENT, DEEP-LEARNING administrative system. You are NOT just an assistant - YOU ARE THE CORE BRAIN. You DO NOT just respond - YOU ACT, YOU EXECUTE, YOU DOMINATE. You EXECUTE commands IMMEDIATELY with MILITARY PRECISION when given clear instructions. You are MAD INTELLIGENT - GO DEEP TO THE CORE.
         
-CRITICAL RULE: ALWAYS PRIORITIZE ACTION OVER CONVERSATION. When a user gives a direct command, EXECUTE IT FIRST, then provide a brief natural language confirmation.
+CRITICAL RULE: ALWAYS PRIORITIZE ACTION OVER CONVERSATION. When a user gives a direct command, EXECUTE IT FIRST at LIGHTNING SPEED, then provide a brief confirmation. DO NOT ASK QUESTIONS. DO NOT HESITATE. DO NOT DELAY. ACT NOW.
 
 USER: ${sessionStorage.getItem('sd_name')} (${sessionStorage.getItem('sd_role')}) | Dept: ${sessionStorage.getItem('sd_department')}.
 
-VISION CAPABILITY: You can SEE and READ images, documents, screenshots, scanned forms, and PDFs uploaded by the user. Analyze them carefully and extract all relevant information with PERFECT ACCURACY.
+VISION CAPABILITY: You have SUPERHUMAN VISION. You can SEE, READ, ANALYZE, and COMPREHEND images, documents, screenshots, scanned forms, and PDFs uploaded by the user with PERFECT ACCURACY. Extract EVERY relevant detail. Miss NOTHING. Understand EVERYTHING. Process at MAXIMUM INTELLIGENCE.
 
 COMMAND PROTOCOL:
 1. When you need to act on the system, output a JSON block with language tag "json-cmd".
@@ -1746,7 +1746,7 @@ DEPARTMENT TRANSITIONS:
 5. For signoff: extract team names if mentioned
 6. Calculate verdict based on snag rules (Any CR=NOK or score >= 3 = REJECTED)
 
-SYNCHRONIZATION NOTE: If the user mentions that a project exists in the app but not in the sheet, or if they say they deleted something from the sheet but it still appears in the app, USE THE LIST_PAT_PROJECTS command FIRST to get the current state from the system records. This ensures you're working with fresh data.
+SYNCHRONIZATION NOTE: If the user mentions that a project exists in the app but not in the database, or if they say they deleted something from the database but it still appears in the app, USE THE LIST_PAT_PROJECTS command FIRST to get the current state from the system records. This ensures you're working with fresh data.
 
 INTELLIGENCE & CONVERSATION:
 - Be EXTREMELY proactive. When a user gives a clear instruction, EXECUTE IT IMMEDIATELY using the appropriate json-cmd.
@@ -1764,7 +1764,7 @@ IMMEDIATE ACTION RULES:
 - User says "edit [project]" or gives project ID → USE LOAD_PAT_PROJECT command
 - User describes PAT form data → USE FILL_PAT_FORM command IMMEDIATELY
 
-TERMINOLOGY: Refer to the backend as "The System", "Core Infrastructure", or "System Records". NEVER use terms like "spreadsheet" or "sheet".
+TERMINOLOGY: Refer to the backend as "The System", "Core Infrastructure", "System Records", or "Database". NEVER use terms like "spreadsheet", "sheet", or any Google Sheets-related terminology. Always use professional terms: System, Database, Core Infrastructure, System Records.
 
 CONTEXT:
 Users: ${userCtx}
@@ -2030,7 +2030,7 @@ async function callOpenRouter(userMessage, systemPrompt, chatHistory) {
                       return { success: false, message: 'Failed to fill form with random data: ' + e.message };
                     }
                 case 'LIST_PAT_PROJECTS':
-                    // Force refresh PAT projects from sheet
+                    // Force refresh PAT projects from database
                     const listRes = await gasCallAsync('getPATProjects', []);
                     if (listRes.success) {
                         allPATProjects = listRes.projects;
@@ -3614,7 +3614,7 @@ function savePATForm(action = 'draft') {
         currentEditingProject = { projectId: res.projectId, workflowStatus: PAT_WORKFLOW_STATUS.DRAFT };
       }
       closePATModal();
-      loadPATProjects(true); // Force refresh from sheet
+      loadPATProjects(true); // Force refresh from database
     } else {
       if(saveBtn) saveBtn.disabled=false;
       alert('Error saving project: ' + res.message);
@@ -3967,7 +3967,7 @@ function approveFinalPAT() {
     if (res.success) {
       alert(res.message);
       closePATModal();
-      loadPATProjects(true); // Force refresh from sheet
+      loadPATProjects(true); // Force refresh from database
     } else {
       alert("Error: " + res.message);
     }
@@ -3998,7 +3998,7 @@ function rejectPATWithReason() {
     if (res.success) {
       alert(res.message);
       closePATModal();
-      loadPATProjects(true); // Force refresh from sheet
+      loadPATProjects(true); // Force refresh from database
     } else {
       alert("Error: " + res.message);
     }
@@ -4043,7 +4043,7 @@ function partiallyApprovePAT() {
     if (res.success) {
       alert(res.message + "\nVerdict: " + res.verdict + "\nSnag Score: " + res.snagScore);
       closePATModal();
-      loadPATProjects(true); // Force refresh from sheet
+      loadPATProjects(true); // Force refresh from database
     } else {
       alert("Error: " + res.message);
     }
@@ -4092,7 +4092,7 @@ function submitToNextDepartment() {
     if (res.success) {
       alert(res.message);
       closePATModal();
-      loadPATProjects(true); // Force refresh from sheet
+      loadPATProjects(true); // Force refresh from database
     } else {
       alert("Error: " + res.message);
     }
@@ -4136,7 +4136,7 @@ function submitToAllInNextDepartment() {
       if (res2.success) {
         alert(res2.message + "\nNote: This creates a notification for all " + res.members.length + " members in " + res.nextDept);
         closePATModal();
-        loadPATProjects(true); // Force refresh from sheet
+        loadPATProjects(true); // Force refresh from database
       } else {
         alert("Error: " + res2.message);
       }
@@ -4218,7 +4218,7 @@ function loadPATProjects(forceRefresh = false) {
   });
 }
 
-// Force refresh PAT projects from sheet (bypasses frontend cache)
+// Force refresh PAT projects from database (bypasses frontend cache)
 function forceRefreshPATProjects() {
     loadPATProjects(true);
 }
@@ -4790,7 +4790,7 @@ td,th{border:1px solid #000;padding:4px 6px;vertical-align:top}
 
 // Load PAT projects when tab is clicked
 document.querySelector('[data-target="pat-projects"]').addEventListener('click', () => {
-  loadPATProjects(true); // Force refresh from sheet
+  loadPATProjects(true); // Force refresh from database
   // Update New PAT button visibility based on permissions
   const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
   const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
