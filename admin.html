@@ -2323,7 +2323,7 @@ function _sevStyle(s){
 
 /**
  * Check if current user can perform workflow actions (Approve/Partial/Reject) on a project
- * Only the assigned department can perform workflow actions, NOT MEC (except for final review)
+ * Only the currently assigned department can perform workflow actions
  */
 function canPerformWorkflowAction(project) {
   if (!project) return false;
@@ -2331,34 +2331,38 @@ function canPerformWorkflowAction(project) {
   const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
   const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
   const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
-  
-  // Admins can perform any workflow action
-  if (myRole === 'admin' || myRole === 'super admin') return true;
-  
-  const status = project.workflowStatus || PAT_WORKFLOW_STATUS.DRAFT;
+  const status = project.workflowStatus || 'Draft';
   const assignedDept = (project.assignedToDept || '').toLowerCase();
   const assignedEmail = (project.assignedToEmail || '').toLowerCase();
-  
-  // MEC/MECH can only perform workflow actions on Draft, Rejected, or Final MEC Review
-  if (myDept === 'mec' || myDept === 'mech') {
-    return [PAT_WORKFLOW_STATUS.DRAFT, PAT_WORKFLOW_STATUS.REJECTED, PAT_WORKFLOW_STATUS.AWAITING_FINAL_MEC].includes(status);
-  }
-  
-  // Other departments can only perform workflow actions if they are the assigned department
-  // or if the project is awaiting their department
-  const deptAwaiting = {
-    'project team': PAT_WORKFLOW_STATUS.AWAITING_PROJECT,
-    'planning team': PAT_WORKFLOW_STATUS.AWAITING_PLANNING,
-    'service delivery': PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY,
-    'service delivery / metro': PAT_WORKFLOW_STATUS.AWAITING_SERVICE_DELIVERY
+
+  // Admins can do anything
+  if (myRole === 'super admin') return true;
+
+  // Map: which department "owns" each status
+  const ownerMap = {
+    'Draft': 'mec',
+    'Rejected': 'mec',
+    'Awaiting Final MEC Review': 'mec',
+    'Awaiting Project Team': 'project team',
+    'Awaiting Planning Team': 'planning team',
+    'Awaiting Service Delivery': 'service delivery / metro',
+    'Completed': null
   };
-  
-  // Check if this department is the one that should be acting on this project
-  if (deptAwaiting[myDept] === status) return true;
-  if (assignedDept === myDept) return true;
-  if (assignedEmail === myEmail) return true;
-  
-  return false;
+
+  const currentOwner = ownerMap[status];
+  if (!currentOwner) return false; // Completed - no one can act
+
+  // MEC: only on Draft, Rejected, Final MEC
+  if (myDept === 'mec' || myDept === 'mech') {
+    return currentOwner === 'mec';
+  }
+
+  // Other depts: only if they are the current owner AND assigned
+  const myDeptNormalized = myDept.includes('service') ? 'service delivery / metro' : myDept;
+  if (currentOwner !== myDeptNormalized) return false;
+
+  // Must also be specifically assigned
+  return assignedEmail === myEmail || assignedDept === myDeptNormalized;
 }
 
 // Workflow Status Constants (must match backend)
@@ -4074,8 +4078,8 @@ function renderPATTable(projects) {
 function filterPATProjects() {
   const searchQ = document.getElementById("pat-search").value.toLowerCase().trim();
   const statusFilter = document.getElementById("pat-status-filter").value;
-  const myDept = (sessionStorage.getItem('sd_department') || '').toLowerCase();
-  const myEmail = (sessionStorage.getItem('sd_email') || '').toLowerCase();
+  const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
+  const isAdmin = myRole === 'admin' || myRole === 'super admin';
   
   let filtered = allPATProjects;
   
@@ -4093,36 +4097,13 @@ function filterPATProjects() {
     );
   }
   
-  // Filter by status - show all if no filter selected
-  // For Project Team, Planning Team, Service Delivery users, also show their assigned projects
+  // Filter by status dropdown
   if(statusFilter && statusFilter !== 'All Statuses'){
     filtered = filtered.filter(p => p.workflowStatus === statusFilter);
-  } else {
-    // If no specific status filter and not searching, show projects relevant to user's department
-    // unless user is admin
-    const myRole = (sessionStorage.getItem('sd_role') || '').toLowerCase();
-    const isAdmin = myRole === 'admin' || myRole === 'super admin';
-    
-    if(!searchQ && !isAdmin){
-      // Show projects awaiting this department OR assigned to this user
-      filtered = filtered.filter(p => {
-        const assignedDept = (p.assignedToDept || '').toLowerCase();
-        const assignedEmail = (p.assignedToEmail || '').toLowerCase();
-        const status = p.workflowStatus || '';
-        
-        // Show if: awaiting this department, OR assigned to this user, OR submitted by this user
-        const deptMatch = (
-          (myDept === 'project team' && status === 'Awaiting Project Team') ||
-          (myDept === 'planning team' && status === 'Awaiting Planning Team') ||
-          (myDept.includes('service') && (status === 'Awaiting Service Delivery' || status === 'Awaiting Service Delivery / Metro')) ||
-          (myDept === 'mec' || myDept === 'mech') && (status === 'Draft' || status === 'Rejected' || status === 'Awaiting Final MEC Review')
-        );
-        const userMatch = assignedEmail === myEmail || (p.submittedByEmail || '').toLowerCase() === myEmail;
-        
-        return deptMatch || userMatch;
-      });
-    }
   }
+  
+  // Note: Primary filtering is done by backend in getPATProjects() based on department
+  // Frontend only applies search and status filter on top of what backend returned
   
   // Always render table view
   renderPATTable(filtered);

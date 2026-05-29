@@ -2128,12 +2128,17 @@ function getPATProjects(token) {
         return false;
       }
       
-      // Other departments only see projects assigned to them
+      // Other departments see ANY project assigned to their department or to them personally
       if (projectAssignedToEmail.toLowerCase() === myEmail.toLowerCase()) return true;
-      if (projectAssignedToDept.toLowerCase() === myDept && 
-          (projectWorkflowStatus === PAT_WORKFLOW.AWAITING_PROJECT ||
-           projectWorkflowStatus === PAT_WORKFLOW.AWAITING_PLANNING ||
-           projectWorkflowStatus === PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY)) return true;
+      if (projectAssignedToDept.toLowerCase() === myDept) return true;
+      // Also show by workflow status matching department
+      var deptStatusMap = {
+        'project team': PAT_WORKFLOW.AWAITING_PROJECT,
+        'planning team': PAT_WORKFLOW.AWAITING_PLANNING,
+        'service delivery / metro': PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY,
+        'service delivery': PAT_WORKFLOW.AWAITING_SERVICE_DELIVERY
+      };
+      if (deptStatusMap[myDept] && projectWorkflowStatus === deptStatusMap[myDept]) return true;
       
       return false;
     });
